@@ -9,3 +9,8 @@
 **Decision:** Daniel's studio-director agent spec adopted as the standing point of contact for PvP Arena; began standing up the full specialist roster (game-director, qa-engineer, level-designer, technical-artist, social-media-manager, community-manager, sales-monetization, contracts-manager, finance-ops).
 **Reason:** Requested directly.
 **Who it affects:** all workstreams.
+
+## 2026-09-07 — Engine pinned to UE 5.8; build toolchain is VS2022, not VS2026
+**Decision:** `EngineAssociation` is `5.8` (per §0 of the scaffold, log the exact version at kickoff — done here). C++ project-file generation must target **Visual Studio 2022**, installed alongside whatever newer VS version is on a given machine — do not rely on the newest installed VS.
+**Reason:** UE 5.8's `UnrealBuildTool` doesn't recognize Visual Studio 2026 (v18) as a supported project-file format. With only VS2026 installed, project generation failed with `Unexpected ProjectFileFormat 'Default'` (UBT detects the installed IDE, can't map it to a known format, and falls back to the literal unhandled string `"Default"`). Installing VS2022 side-by-side (Community edition, "Game development with C++" workload) resolved it.
+**Who it affects:** game-director (build order assumes C++ compiles), anyone setting up the project on a new machine — check installed VS version before assuming project generation will "just work" on the newest VS available. `Config/DefaultEditorPerProjectUserSettings.ini` is now gitignored so a machine's resolved IDE/editor preference doesn't get committed and break other machines the way this did.
