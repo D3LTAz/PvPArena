@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "PvPHealthComponent.h"
 #include "PvPWeaponComponent.h"
+#include "PvPWeaponData.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
@@ -88,6 +89,16 @@ APvPCharacter::APvPCharacter()
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> FireActionFinder(TEXT("/Game/Input/Actions/IA_Fire"));
 	if (FireActionFinder.Succeeded()) { FireAction = FireActionFinder.Object; }
+
+	// 2-3 weapon loadout, cycled with Q (see HandleCycleWeaponInput).
+	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> PistolFinder(TEXT("/Game/Weapons/DA_Weapon_Pistol"));
+	if (PistolFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(PistolFinder.Object); }
+
+	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> RifleFinder(TEXT("/Game/Weapons/DA_Weapon_Rifle"));
+	if (RifleFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(RifleFinder.Object); }
+
+	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> SniperFinder(TEXT("/Game/Weapons/DA_Weapon_Sniper"));
+	if (SniperFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(SniperFinder.Object); }
 }
 
 void APvPCharacter::BeginPlay()
@@ -123,6 +134,10 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	{
 		UE_LOG(LogPvPArena, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+
+	// Weapon cycling: bound via the legacy raw-key path rather than an Input
+	// Action asset -- no IMC key-mapping required for this one.
+	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)
@@ -148,6 +163,14 @@ void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
 	if (WeaponComponent)
 	{
 		WeaponComponent->Fire();
+	}
+}
+
+void APvPCharacter::HandleCycleWeaponInput()
+{
+	if (WeaponComponent)
+	{
+		WeaponComponent->CycleWeapon();
 	}
 }
 

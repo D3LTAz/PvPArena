@@ -19,6 +19,11 @@ void UPvPWeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!WeaponData && AvailableWeapons.Num() > 0)
+	{
+		WeaponData = AvailableWeapons[0];
+	}
+
 	if (WeaponData)
 	{
 		CurrentAmmo = WeaponData->MaxAmmo;
@@ -30,6 +35,18 @@ void UPvPWeaponComponent::EquipWeapon(UPvPWeaponData* NewWeaponData)
 	WeaponData = NewWeaponData;
 	CurrentAmmo = WeaponData ? WeaponData->MaxAmmo : 0;
 	OnRep_CurrentAmmo();
+}
+
+void UPvPWeaponComponent::CycleWeapon()
+{
+	if (AvailableWeapons.Num() == 0)
+	{
+		return;
+	}
+
+	const int32 CurrentIndex = WeaponData ? AvailableWeapons.IndexOfByKey(WeaponData) : INDEX_NONE;
+	const int32 NextIndex = (CurrentIndex == INDEX_NONE) ? 0 : (CurrentIndex + 1) % AvailableWeapons.Num();
+	EquipWeapon(AvailableWeapons[NextIndex]);
 }
 
 void UPvPWeaponComponent::Fire()

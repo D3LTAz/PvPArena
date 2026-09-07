@@ -30,6 +30,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon")
 	TObjectPtr<UPvPWeaponData> WeaponData;
 
+	/** The 2-3 weapon loadout available to cycle through. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon")
+	TArray<TObjectPtr<UPvPWeaponData>> AvailableWeapons;
+
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo, BlueprintReadOnly, Category = "Weapon")
 	int32 CurrentAmmo = 0;
 
@@ -40,6 +44,10 @@ public:
 	/** Swaps to a different weapon's data (used for the 2-3 weapon loadout). Cosmetic-only on the client; damage/range always reads WeaponData server-side. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void EquipWeapon(UPvPWeaponData* NewWeaponData);
+
+	/** Advances to the next weapon in AvailableWeapons, wrapping around. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void CycleWeapon();
 
 	UFUNCTION()
 	void OnRep_CurrentAmmo();

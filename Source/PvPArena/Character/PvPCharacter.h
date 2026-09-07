@@ -96,6 +96,9 @@ protected:
 	/** Called for fire input */
 	void HandleFireInput(const FInputActionValue& Value);
 
+	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
+	void HandleCycleWeaponInput();
+
 	/** Bound to HealthComponent::OnDeath. Hides/disables the character and starts the respawn timer stub. */
 	UFUNCTION()
 	void HandleDeath(AActor* InstigatorActor, AController* InstigatorController);
