@@ -25,19 +25,11 @@ public class PvPArena : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"PvPArena",
-			"PvPArena/Variant_Platforming",
-			"PvPArena/Variant_Platforming/Animation",
-			"PvPArena/Variant_Combat",
-			"PvPArena/Variant_Combat/AI",
-			"PvPArena/Variant_Combat/Animation",
-			"PvPArena/Variant_Combat/Gameplay",
-			"PvPArena/Variant_Combat/Interfaces",
-			"PvPArena/Variant_Combat/UI",
-			"PvPArena/Variant_SideScrolling",
-			"PvPArena/Variant_SideScrolling/AI",
-			"PvPArena/Variant_SideScrolling/Gameplay",
-			"PvPArena/Variant_SideScrolling/Interfaces",
-			"PvPArena/Variant_SideScrolling/UI"
+			"PvPArena/Core",
+			"PvPArena/Character",
+			"PvPArena/Weapons",
+			"PvPArena/Matchmaking",
+			"PvPArena/UI"
 		});
 
 		// Uncomment if you are using Slate UI
