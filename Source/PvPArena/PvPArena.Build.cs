@@ -18,7 +18,8 @@ public class PvPArena : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
@@ -29,7 +30,8 @@ public class PvPArena : ModuleRules
 			"PvPArena/Character",
 			"PvPArena/Weapons",
 			"PvPArena/Matchmaking",
-			"PvPArena/UI"
+			"PvPArena/UI",
+			"PvPArena/AI"
 		});
 
 		// Uncomment if you are using Slate UI

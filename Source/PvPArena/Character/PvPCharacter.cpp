@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "PvPHealthComponent.h"
+#include "PvPWeaponComponent.h"
 #include "PvPArena.h"
 
 APvPCharacter::APvPCharacter()
@@ -50,6 +51,9 @@ APvPCharacter::APvPCharacter()
 	// Replicated health / server-authoritative damage
 	HealthComponent = CreateDefaultSubobject<UPvPHealthComponent>(TEXT("HealthComponent"));
 
+	// Server-authoritative hitscan fire
+	WeaponComponent = CreateDefaultSubobject<UPvPWeaponComponent>(TEXT("WeaponComponent"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -79,6 +83,9 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APvPCharacter::Look);
+
+		// Firing
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &APvPCharacter::HandleFireInput);
 	}
 	else
 	{
@@ -102,6 +109,14 @@ void APvPCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
+{
+	if (WeaponComponent)
+	{
+		WeaponComponent->Fire();
+	}
 }
 
 void APvPCharacter::HandleDeath(AActor* InstigatorActor, AController* InstigatorController)

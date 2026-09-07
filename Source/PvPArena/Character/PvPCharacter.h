@@ -12,14 +12,14 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UPvPHealthComponent;
+class UPvPWeaponComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 /**
- *  Player-controllable character. Standard UCharacterMovementComponent for
- *  M1 -- no custom movement tech. Owns UPvPHealthComponent; will own
- *  UPvPWeaponComponent once Phase D creates it.
+ *  Player-controllable character. Standard UCharacterMovementComponent --
+ *  no custom movement tech. Owns UPvPHealthComponent and UPvPWeaponComponent.
  */
 UCLASS(abstract)
 class APvPCharacter : public ACharacter
@@ -38,6 +38,10 @@ class APvPCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPvPHealthComponent> HealthComponent;
 
+	/** Server-authoritative hitscan fire */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPvPWeaponComponent> WeaponComponent;
+
 protected:
 
 	/** Jump Input Action */
@@ -55,6 +59,10 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
+
+	/** Fire Input Action */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* FireAction;
 
 	/** Handle to the placeholder respawn timer started on death (Phase E replaces this with real respawn-at-PlayerStart). */
 	FTimerHandle RespawnTimerHandle;
@@ -78,6 +86,9 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for fire input */
+	void HandleFireInput(const FInputActionValue& Value);
 
 	/** Bound to HealthComponent::OnDeath. Hides/disables the character and starts the respawn timer stub. */
 	UFUNCTION()
@@ -111,4 +122,7 @@ public:
 
 	/** Returns HealthComponent subobject **/
 	FORCEINLINE UPvPHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+	/** Returns WeaponComponent subobject **/
+	FORCEINLINE UPvPWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
 };
