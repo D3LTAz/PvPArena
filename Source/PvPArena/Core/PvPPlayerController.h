@@ -13,11 +13,19 @@ class UUserWidget;
  *  Input possession and local HUD ownership. Routing "ready"/format-picker UI
  *  events to the matchmaking subsystem is added in Phase G once
  *  UPvPMatchmakingSubsystem exists.
+ *
+ *  Concrete (not abstract) -- DefaultMappingContexts is resolved directly via
+ *  ConstructorHelpers against IMC_Default rather than requiring a Blueprint
+ *  subclass, for the same reason as APvPCharacter.
  */
-UCLASS(abstract)
+UCLASS()
 class APvPPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+
+	APvPPlayerController();
 
 protected:
 

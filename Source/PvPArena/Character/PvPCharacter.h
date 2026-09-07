@@ -20,8 +20,14 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 /**
  *  Player-controllable character. Standard UCharacterMovementComponent --
  *  no custom movement tech. Owns UPvPHealthComponent and UPvPWeaponComponent.
+ *
+ *  Concrete (not abstract) -- the mesh/anim/input asset references are
+ *  resolved directly via ConstructorHelpers against existing template
+ *  content (SKM_Manny_Simple, ABP_Unarmed, IA_*) rather than requiring a
+ *  Blueprint subclass. This sidesteps the BP_ThirdPersonCharacter parent-
+ *  class redirect breakage logged in docs/decisions.md.
  */
-UCLASS(abstract)
+UCLASS()
 class APvPCharacter : public ACharacter
 {
 	GENERATED_BODY()

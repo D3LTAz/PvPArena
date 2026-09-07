@@ -2,26 +2,18 @@
 
 #include "PvPPracticeGameMode.h"
 #include "PvPAIController.h"
-#include "UObject/ConstructorHelpers.h"
+#include "PvPCharacter.h"
+#include "PvPPlayerController.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerController.h"
 #include "PvPArena.h"
 
 APvPPracticeGameMode::APvPPracticeGameMode()
 {
-	static ConstructorHelpers::FClassFinder<APawn> PawnFinder(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter"));
-	if (PawnFinder.Succeeded())
-	{
-		DefaultPawnClass = PawnFinder.Class;
-		BotPawnClass = PawnFinder.Class;
-	}
-
-	static ConstructorHelpers::FClassFinder<APlayerController> ControllerFinder(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonPlayerController"));
-	if (ControllerFinder.Succeeded())
-	{
-		PlayerControllerClass = ControllerFinder.Class;
-	}
-
+	// Pure C++ classes -- see APvPCharacter/APvPPlayerController's class
+	// comments for why this doesn't go through a Blueprint subclass.
+	DefaultPawnClass = APvPCharacter::StaticClass();
+	BotPawnClass = APvPCharacter::StaticClass();
+	PlayerControllerClass = APvPPlayerController::StaticClass();
 	BotControllerClass = APvPAIController::StaticClass();
 }
 

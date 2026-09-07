@@ -6,8 +6,24 @@
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
+#include "UObject/ConstructorHelpers.h"
 #include "PvPArena.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+
+APvPPlayerController::APvPPlayerController()
+{
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultIMCFinder(TEXT("/Game/Input/IMC_Default"));
+	if (DefaultIMCFinder.Succeeded())
+	{
+		DefaultMappingContexts.Add(DefaultIMCFinder.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MouseLookIMCFinder(TEXT("/Game/Input/IMC_MouseLook"));
+	if (MouseLookIMCFinder.Succeeded())
+	{
+		MobileExcludedMappingContexts.Add(MouseLookIMCFinder.Object);
+	}
+}
 
 void APvPPlayerController::BeginPlay()
 {

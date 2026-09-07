@@ -12,6 +12,10 @@
 #include "InputActionValue.h"
 #include "PvPHealthComponent.h"
 #include "PvPWeaponComponent.h"
+#include "Animation/AnimInstance.h"
+#include "InputMappingContext.h"
+#include "InputAction.h"
+#include "UObject/ConstructorHelpers.h"
 #include "PvPArena.h"
 
 APvPCharacter::APvPCharacter()
@@ -54,8 +58,36 @@ APvPCharacter::APvPCharacter()
 	// Server-authoritative hitscan fire
 	WeaponComponent = CreateDefaultSubobject<UPvPWeaponComponent>(TEXT("WeaponComponent"));
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	// Mesh/anim placeholder -- resolved directly here rather than via a
+	// Blueprint subclass (see the class comment for why).
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"));
+	if (MeshFinder.Succeeded())
+	{
+		GetMesh()->SetSkeletalMesh(MeshFinder.Object);
+		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
+		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	}
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimFinder(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed"));
+	if (AnimFinder.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimFinder.Class);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionFinder(TEXT("/Game/Input/Actions/IA_Jump"));
+	if (JumpActionFinder.Succeeded()) { JumpAction = JumpActionFinder.Object; }
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> MoveActionFinder(TEXT("/Game/Input/Actions/IA_Move"));
+	if (MoveActionFinder.Succeeded()) { MoveAction = MoveActionFinder.Object; }
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> LookActionFinder(TEXT("/Game/Input/Actions/IA_Look"));
+	if (LookActionFinder.Succeeded()) { LookAction = LookActionFinder.Object; }
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> MouseLookActionFinder(TEXT("/Game/Input/Actions/IA_MouseLook"));
+	if (MouseLookActionFinder.Succeeded()) { MouseLookAction = MouseLookActionFinder.Object; }
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> FireActionFinder(TEXT("/Game/Input/Actions/IA_Fire"));
+	if (FireActionFinder.Succeeded()) { FireAction = FireActionFinder.Object; }
 }
 
 void APvPCharacter::BeginPlay()
