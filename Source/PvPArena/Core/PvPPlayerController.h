@@ -4,20 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "PvPArenaPlayerController.generated.h"
+#include "PvPPlayerController.generated.h"
 
 class UInputMappingContext;
 class UUserWidget;
 
 /**
- *  Basic PlayerController class for a third person game
- *  Manages input mappings
+ *  Input possession and local HUD ownership. Routing "ready"/format-picker UI
+ *  events to the matchmaking subsystem is added in Phase G once
+ *  UPvPMatchmakingSubsystem exists.
  */
 UCLASS(abstract)
-class APvPArenaPlayerController : public APlayerController
+class APvPPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
 protected:
 
 	/** Input Mapping Contexts */

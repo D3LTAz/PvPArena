@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 
-#include "PvPArenaPlayerController.h"
+#include "PvPPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
@@ -9,7 +9,7 @@
 #include "PvPArena.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
-void APvPArenaPlayerController::BeginPlay()
+void APvPPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -33,7 +33,7 @@ void APvPArenaPlayerController::BeginPlay()
 	}
 }
 
-void APvPArenaPlayerController::SetupInputComponent()
+void APvPPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
@@ -60,7 +60,7 @@ void APvPArenaPlayerController::SetupInputComponent()
 	}
 }
 
-bool APvPArenaPlayerController::ShouldUseTouchControls() const
+bool APvPPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
