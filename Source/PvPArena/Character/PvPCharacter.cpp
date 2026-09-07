@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "PvPArenaCharacter.h"
+#include "PvPCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,13 +10,14 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "PvPHealthComponent.h"
 #include "PvPArena.h"
 
-APvPArenaCharacter::APvPArenaCharacter()
+APvPCharacter::APvPCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -46,25 +47,38 @@ APvPArenaCharacter::APvPArenaCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
+	// Replicated health / server-authoritative damage
+	HealthComponent = CreateDefaultSubobject<UPvPHealthComponent>(TEXT("HealthComponent"));
+
+	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
-void APvPArenaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APvPCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HealthComponent)
+	{
+		HealthComponent->OnDeath.AddDynamic(this, &APvPCharacter::HandleDeath);
+	}
+}
+
+void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APvPArenaCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &APvPArenaCharacter::Look);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APvPCharacter::Move);
+		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &APvPCharacter::Look);
 
 		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APvPArenaCharacter::Look);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APvPCharacter::Look);
 	}
 	else
 	{
@@ -72,7 +86,7 @@ void APvPArenaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	}
 }
 
-void APvPArenaCharacter::Move(const FInputActionValue& Value)
+void APvPCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -81,7 +95,7 @@ void APvPArenaCharacter::Move(const FInputActionValue& Value)
 	DoMove(MovementVector.X, MovementVector.Y);
 }
 
-void APvPArenaCharacter::Look(const FInputActionValue& Value)
+void APvPCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
@@ -90,7 +104,29 @@ void APvPArenaCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void APvPArenaCharacter::DoMove(float Right, float Forward)
+void APvPCharacter::HandleDeath(AActor* InstigatorActor, AController* InstigatorController)
+{
+	// Placeholder: hide + disable collision/movement on death. Real
+	// ragdoll and respawn-at-PlayerStart logic lands in Phase E once the
+	// GameMode owns team spawns -- this is only the C3 stub.
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->DisableMovement();
+	}
+
+	GetWorldTimerManager().SetTimer(RespawnTimerHandle, FTimerDelegate::CreateLambda([WeakThis = TWeakObjectPtr<APvPCharacter>(this)]()
+	{
+		if (APvPCharacter* StrongThis = WeakThis.Get())
+		{
+			UE_LOG(LogPvPArena, Log, TEXT("Respawn timer stub elapsed for '%s' -- real respawn lands in Phase E."), *GetNameSafe(StrongThis));
+		}
+	}), 3.0f, false);
+}
+
+void APvPCharacter::DoMove(float Right, float Forward)
 {
 	if (GetController() != nullptr)
 	{
@@ -101,16 +137,16 @@ void APvPArenaCharacter::DoMove(float Right, float Forward)
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		// get right vector 
+		// get right vector
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		// add movement 
+		// add movement
 		AddMovementInput(ForwardDirection, Forward);
 		AddMovementInput(RightDirection, Right);
 	}
 }
 
-void APvPArenaCharacter::DoLook(float Yaw, float Pitch)
+void APvPCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
@@ -120,13 +156,13 @@ void APvPArenaCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
-void APvPArenaCharacter::DoJumpStart()
+void APvPCharacter::DoJumpStart()
 {
 	// signal the character to jump
 	Jump();
 }
 
-void APvPArenaCharacter::DoJumpEnd()
+void APvPCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
