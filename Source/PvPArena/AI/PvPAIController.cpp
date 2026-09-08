@@ -40,14 +40,26 @@ void APvPAIController::Tick(float DeltaSeconds)
 		ControlledPawn->AddMovementInput(Direction, 1.0f);
 	}
 
-	const double TimeSinceAcquired = (GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0) - TargetAcquiredTimeSeconds;
-	if (Distance <= EngageRange && TimeSinceAcquired >= EngageDelayAfterTargetAcquired)
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	const double TimeSinceAcquired = Now - TargetAcquiredTimeSeconds;
+	const double TimeSinceLastAttempt = Now - LastFireAttemptTimeSeconds;
+
+	if (Distance <= EngageRange
+		&& TimeSinceAcquired >= EngageDelayAfterTargetAcquired
+		&& TimeSinceLastAttempt >= FireAttemptCooldown)
 	{
-		if (APvPCharacter* PvPCharacter = Cast<APvPCharacter>(ControlledPawn))
+		LastFireAttemptTimeSeconds = Now;
+
+		// Difficulty lever: skip the attempt entirely some of the time,
+		// simulating a miss/hesitation, independent of weapon spread.
+		if (FMath::FRand() >= MissChance)
 		{
-			if (UPvPWeaponComponent* Weapon = PvPCharacter->GetWeaponComponent())
+			if (APvPCharacter* PvPCharacter = Cast<APvPCharacter>(ControlledPawn))
 			{
-				Weapon->Fire();
+				if (UPvPWeaponComponent* Weapon = PvPCharacter->GetWeaponComponent())
+				{
+					Weapon->Fire();
+				}
 			}
 		}
 	}

@@ -21,8 +21,23 @@ void APvPPracticeGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Give the player pawn a moment to spawn/possess before spawning the bot.
-	GetWorldTimerManager().SetTimer(SpawnBotTimerHandle, this, &APvPPracticeGameMode::SpawnBot, 0.5f, false);
+	// Bot spawn is deferred to BeginMatch() -- see class comment. Player
+	// pawn spawn/possession happens automatically as part of the normal
+	// GameMode flow regardless.
+}
+
+void APvPPracticeGameMode::BeginMatch()
+{
+	if (bMatchStarted)
+	{
+		return;
+	}
+	bMatchStarted = true;
+
+	SetMatchState(EPvPMatchState::InProgress);
+
+	// Give the player pawn one extra frame to be fully settled before spawning the bot.
+	GetWorldTimerManager().SetTimer(SpawnBotTimerHandle, this, &APvPPracticeGameMode::SpawnBot, 0.2f, false);
 }
 
 void APvPPracticeGameMode::SpawnBot()

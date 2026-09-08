@@ -15,6 +15,12 @@ class APvPAIController;
  * at the existing BP_ThirdPersonCharacter/BP_ThirdPersonPlayerController --
  * so it's usable directly as GlobalDefaultGameMode with no new Blueprint
  * authoring required.
+ *
+ * The bot does NOT spawn automatically on a timer -- BeginPlay only sets
+ * WaitingToStart. The match (and the bot) only actually starts once
+ * BeginMatch() is called, which APvPPlayerController does when the player
+ * dismisses the tutorial/start overlay (Enter). This keeps the player from
+ * getting shot at while they're still reading the instructions.
  */
 UCLASS()
 class APvPPracticeGameMode : public APvPDeathmatchGameMode
@@ -23,6 +29,10 @@ class APvPPracticeGameMode : public APvPDeathmatchGameMode
 
 public:
 	APvPPracticeGameMode();
+
+	/** Transitions to InProgress and spawns the bot. Called by APvPPlayerController on tutorial dismissal. */
+	UFUNCTION(BlueprintCallable, Category = "Practice")
+	void BeginMatch();
 
 protected:
 	virtual void BeginPlay() override;
@@ -46,4 +56,5 @@ private:
 	void SpawnBot();
 
 	FTimerHandle SpawnBotTimerHandle;
+	bool bMatchStarted = false;
 };

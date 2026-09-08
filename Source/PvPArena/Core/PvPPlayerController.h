@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UPvPTutorialWidget;
 
 /**
  *  Input possession and local HUD ownership. Routing "ready"/format-picker UI
@@ -49,6 +50,10 @@ protected:
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
 
+	/** Shown on BeginPlay, dismissed via Enter -- see HandleDismissTutorial(). */
+	UPROPERTY()
+	TObjectPtr<UPvPTutorialWidget> TutorialWidget;
+
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
@@ -57,5 +62,8 @@ protected:
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
+
+	/** Bound to Enter via the legacy raw-key path. Removes TutorialWidget and starts the match. */
+	void HandleDismissTutorial();
 
 };

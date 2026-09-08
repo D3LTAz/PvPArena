@@ -7,6 +7,8 @@
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/ConstructorHelpers.h"
+#include "PvPTutorialWidget.h"
+#include "PvPPracticeGameMode.h"
 #include "PvPArena.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -47,6 +49,20 @@ void APvPPlayerController::BeginPlay()
 		}
 
 	}
+
+	if (IsLocalPlayerController())
+	{
+		TutorialWidget = CreateWidget<UPvPTutorialWidget>(this, UPvPTutorialWidget::StaticClass());
+		if (TutorialWidget)
+		{
+			TutorialWidget->AddToViewport(100);
+
+			bShowMouseCursor = true;
+			FInputModeUIOnly InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+		}
+	}
 }
 
 void APvPPlayerController::SetupInputComponent()
@@ -74,10 +90,31 @@ void APvPPlayerController::SetupInputComponent()
 			}
 		}
 	}
+
+	InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &APvPPlayerController::HandleDismissTutorial);
 }
 
 bool APvPPlayerController::ShouldUseTouchControls() const
 {
 	// are we on a mobile platform? Should we force touch?
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+void APvPPlayerController::HandleDismissTutorial()
+{
+	if (!TutorialWidget)
+	{
+		return;
+	}
+
+	TutorialWidget->RemoveFromParent();
+	TutorialWidget = nullptr;
+
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	if (APvPPracticeGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<APvPPracticeGameMode>() : nullptr)
+	{
+		GM->BeginMatch();
+	}
 }

@@ -39,9 +39,23 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float EngageDelayAfterTargetAcquired = 2.5f;
 
+	/** Minimum seconds between fire *attempts*, independent of the equipped
+	 * weapon's own fire rate -- the main difficulty lever. Weapon fire rate
+	 * still applies on top of this (whichever is slower wins). */
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	float FireAttemptCooldown = 2.0f;
+
+	/** Chance [0-1] that a fire attempt is skipped entirely (simulated miss/
+	 * hesitation), on top of FireAttemptCooldown. 0 = never skips. */
+	UPROPERTY(EditDefaultsOnly, Category = "AI", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MissChance = 0.5f;
+
 private:
 	TWeakObjectPtr<APawn> TargetPawn;
 
 	/** World time (seconds) at which SetTargetPawn() was called. */
 	double TargetAcquiredTimeSeconds = 0.0;
+
+	/** World time (seconds) of the last fire attempt (hit or missed roll). */
+	double LastFireAttemptTimeSeconds = -1000.0;
 };
