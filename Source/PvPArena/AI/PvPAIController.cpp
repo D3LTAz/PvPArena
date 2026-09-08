@@ -13,6 +13,7 @@ APvPAIController::APvPAIController()
 void APvPAIController::SetTargetPawn(APawn* InTargetPawn)
 {
 	TargetPawn = InTargetPawn;
+	TargetAcquiredTimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 }
 
 void APvPAIController::Tick(float DeltaSeconds)
@@ -39,7 +40,8 @@ void APvPAIController::Tick(float DeltaSeconds)
 		ControlledPawn->AddMovementInput(Direction, 1.0f);
 	}
 
-	if (Distance <= EngageRange)
+	const double TimeSinceAcquired = (GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0) - TargetAcquiredTimeSeconds;
+	if (Distance <= EngageRange && TimeSinceAcquired >= EngageDelayAfterTargetAcquired)
 	{
 		if (APvPCharacter* PvPCharacter = Cast<APvPCharacter>(ControlledPawn))
 		{

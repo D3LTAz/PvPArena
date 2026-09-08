@@ -34,9 +34,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Practice")
 	TSubclassOf<APvPAIController> BotControllerClass;
 
-	/** Distance in front of the player to spawn the bot. */
+	/** Distance in front of the player to spawn the bot. Note: the practice
+	 * ring (Lvl_PracticeRing) has a ~1200-unit wall radius, so this must stay
+	 * well under that or the bot spawns outside/inside the ring wall -- the
+	 * actual "don't insta-kill the player on spawn" fix is
+	 * APvPAIController::EngageDelayAfterTargetAcquired, not spawn distance. */
 	UPROPERTY(EditDefaultsOnly, Category = "Practice")
-	float BotSpawnDistance = 1000.f;
+	float BotSpawnDistance = 900.f;
 
 private:
 	void SpawnBot();

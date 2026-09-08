@@ -31,6 +31,10 @@ public:
 	/** Server-only. Reduces CurrentHealth and broadcasts OnDeath if it reaches 0. */
 	void ServerApplyDamage(float Amount, AController* InstigatorController);
 
+	/** Server-only. Restores CurrentHealth to MaxHealth and clears the dead flag so damage can be applied again -- called on respawn. */
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void ResetHealth();
+
 	UPROPERTY(BlueprintAssignable, Category = "Health")
 	FPvPOnDeathSignature OnDeath;
 

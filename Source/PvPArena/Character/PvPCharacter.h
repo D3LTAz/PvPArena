@@ -88,8 +88,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* FireAction;
 
-	/** Handle to the placeholder respawn timer started on death (Phase E replaces this with real respawn-at-PlayerStart). */
+	/** Handle to the respawn timer started on death. */
 	FTimerHandle RespawnTimerHandle;
+
+	/** Seconds between death and respawn. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Health")
+	float RespawnDelaySeconds = 3.f;
 
 	/** True = blend camera views via SetViewTargetWithBlend. False = instant cut. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
@@ -137,9 +141,12 @@ protected:
 	/** Single source of truth for what changes between 1st/3rd person. */
 	void ApplyViewMode(ECameraViewMode NewMode);
 
-	/** Bound to HealthComponent::OnDeath. Hides/disables the character and starts the respawn timer stub. */
+	/** Bound to HealthComponent::OnDeath. Hides/disables the character and starts the respawn timer. */
 	UFUNCTION()
 	void HandleDeath(AActor* InstigatorActor, AController* InstigatorController);
+
+	/** Fires RespawnDelaySeconds after death. Placeholder respawn-at-first-PlayerStart -- Phase E adds real team-aware spawn selection. */
+	void HandleRespawn();
 
 public:
 

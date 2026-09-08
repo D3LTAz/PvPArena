@@ -15,6 +15,8 @@
 #include "PvPWeaponData.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "GameFramework/PlayerStart.h"
+#include "Kismet/GameplayStatics.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
@@ -281,9 +283,11 @@ void APvPCharacter::ApplyViewMode(ECameraViewMode NewMode)
 
 void APvPCharacter::HandleDeath(AActor* InstigatorActor, AController* InstigatorController)
 {
-	// Placeholder: hide + disable collision/movement on death. Real
-	// ragdoll and respawn-at-PlayerStart logic lands in Phase E once the
-	// GameMode owns team spawns -- this is only the C3 stub.
+	// Placeholder: hide + disable collision/movement on death, ragdoll comes
+	// later. Real team-aware spawn *selection* is Phase E -- this is a
+	// functional single-player respawn-at-first-PlayerStart, not just a stub,
+	// since leaving the player permanently hidden/frozen after any death
+	// isn't a playable loop.
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 
@@ -292,13 +296,36 @@ void APvPCharacter::HandleDeath(AActor* InstigatorActor, AController* Instigator
 		Movement->DisableMovement();
 	}
 
-	GetWorldTimerManager().SetTimer(RespawnTimerHandle, FTimerDelegate::CreateLambda([WeakThis = TWeakObjectPtr<APvPCharacter>(this)]()
+	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &APvPCharacter::HandleRespawn, RespawnDelaySeconds, false);
+}
+
+void APvPCharacter::HandleRespawn()
+{
+	if (!HasAuthority())
 	{
-		if (APvPCharacter* StrongThis = WeakThis.Get())
-		{
-			UE_LOG(LogPvPArena, Log, TEXT("Respawn timer stub elapsed for '%s' -- real respawn lands in Phase E."), *GetNameSafe(StrongThis));
-		}
-	}), 3.0f, false);
+		return;
+	}
+
+	if (APlayerStart* Start = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass())))
+	{
+		SetActorLocation(Start->GetActorLocation(), false, nullptr, ETeleportType::ResetPhysics);
+		SetActorRotation(Start->GetActorRotation());
+	}
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->SetMovementMode(MOVE_Walking);
+	}
+
+	if (HealthComponent)
+	{
+		HealthComponent->ResetHealth();
+	}
+
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' respawned."), *GetNameSafe(this));
 }
 
 void APvPCharacter::DoMove(float Right, float Forward)

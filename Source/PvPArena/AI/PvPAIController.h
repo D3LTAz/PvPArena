@@ -33,6 +33,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float PreferredStandoffRange = 800.f;
 
+	/** Seconds after SetTargetPawn() before the bot will fire -- gives a
+	 * freshly (re)spawned player a moment to get oriented instead of being
+	 * shot on the frame the bot appears. */
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	float EngageDelayAfterTargetAcquired = 2.5f;
+
 private:
 	TWeakObjectPtr<APawn> TargetPawn;
+
+	/** World time (seconds) at which SetTargetPawn() was called. */
+	double TargetAcquiredTimeSeconds = 0.0;
 };
