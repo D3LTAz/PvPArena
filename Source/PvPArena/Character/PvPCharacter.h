@@ -136,6 +136,17 @@ protected:
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
 
+	/**
+	 * DIAGNOSTIC ONLY. Bound directly to LeftMouseButton via the same legacy
+	 * raw-key path already proven to work for Q/V -- bypasses Enhanced Input
+	 * entirely. If this never logs on click, the click isn't reaching the
+	 * PlayerController's input component at all (a Slate/viewport/mouse-
+	 * capture problem). If it DOES log but HandleFireInput still doesn't,
+	 * the problem is specific to IA_Fire's Enhanced Input trigger evaluation.
+	 * Remove once the fire-input bug is resolved.
+	 */
+	void HandleLegacyFireKeyDiagnostic();
+
 	/** Bound to WeaponComponent::OnWeaponEquipped. Swaps WeaponMeshComponent's mesh/scale to match. */
 	UFUNCTION()
 	void HandleWeaponEquipped(UPvPWeaponData* NewWeaponData);

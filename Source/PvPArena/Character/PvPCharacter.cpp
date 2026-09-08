@@ -197,6 +197,7 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleLegacyFireKeyDiagnostic);
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)
@@ -226,6 +227,11 @@ void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
 	{
 		WeaponComponent->Fire();
 	}
+}
+
+void APvPCharacter::HandleLegacyFireKeyDiagnostic()
+{
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' Legacy LeftMouseButton IE_Pressed received (raw input path, bypasses Enhanced Input)."), *GetNameSafe(this));
 }
 
 void APvPCharacter::HandleCycleWeaponInput()
