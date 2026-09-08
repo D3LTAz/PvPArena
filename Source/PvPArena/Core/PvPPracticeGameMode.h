@@ -7,6 +7,7 @@
 #include "PvPPracticeGameMode.generated.h"
 
 class APvPAIController;
+class UPvPAIDifficultyProfile;
 
 /**
  * Single-player practice mode: one human player vs. one AI-controlled bot.
@@ -33,6 +34,10 @@ public:
 	/** Transitions to InProgress and spawns the bot. Called by APvPPlayerController on tutorial dismissal. */
 	UFUNCTION(BlueprintCallable, Category = "Practice")
 	void BeginMatch();
+
+	/** Must be called before BeginMatch() to take effect -- applied to the bot's controller when it spawns. Safe to call with nullptr (bot keeps its class defaults). */
+	UFUNCTION(BlueprintCallable, Category = "Practice")
+	void SetDifficultyProfile(UPvPAIDifficultyProfile* Profile);
 
 protected:
 	virtual void BeginPlay() override;
@@ -71,4 +76,7 @@ private:
 	bool bMatchEnded = false;
 
 	TWeakObjectPtr<APvPAIController> BotControllerRef;
+
+	UPROPERTY()
+	TObjectPtr<UPvPAIDifficultyProfile> PendingDifficultyProfile;
 };

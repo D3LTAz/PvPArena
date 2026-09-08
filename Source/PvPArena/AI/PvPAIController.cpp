@@ -3,6 +3,7 @@
 #include "PvPAIController.h"
 #include "PvPCharacter.h"
 #include "PvPWeaponComponent.h"
+#include "PvPAIDifficultyProfile.h"
 #include "GameFramework/Pawn.h"
 
 APvPAIController::APvPAIController()
@@ -14,6 +15,20 @@ void APvPAIController::SetTargetPawn(APawn* InTargetPawn)
 {
 	TargetPawn = InTargetPawn;
 	TargetAcquiredTimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+}
+
+void APvPAIController::ApplyDifficultyProfile(const UPvPAIDifficultyProfile* Profile)
+{
+	if (!Profile)
+	{
+		return;
+	}
+
+	EngageRange = Profile->EngageRange;
+	PreferredStandoffRange = Profile->PreferredStandoffRange;
+	EngageDelayAfterTargetAcquired = Profile->EngageDelayAfterTargetAcquired;
+	FireAttemptCooldown = Profile->FireAttemptCooldown;
+	MissChance = Profile->MissChance;
 }
 
 void APvPAIController::Tick(float DeltaSeconds)

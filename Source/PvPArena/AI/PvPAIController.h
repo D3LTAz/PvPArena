@@ -6,11 +6,18 @@
 #include "AIController.h"
 #include "PvPAIController.generated.h"
 
+class UPvPAIDifficultyProfile;
+
 /**
  * Minimal practice-bot AI: no Behavior Tree/EQS assets, just a direct
  * approach-and-fire Tick loop against one assigned target. Deliberately
  * simple -- this exists to give the practice-vs-AI ring an opponent, not to
  * be a general-purpose combat AI system.
+ *
+ * Difficulty is entirely data: ApplyDifficultyProfile() copies every tunable
+ * below from a UPvPAIDifficultyProfile asset. The Tick loop itself never
+ * branches on difficulty -- it just reads whatever these fields currently
+ * hold, whether that's the class defaults or an applied profile.
  */
 UCLASS()
 class APvPAIController : public AAIController
@@ -22,6 +29,10 @@ public:
 
 	/** Called by the GameMode right after spawning/possessing the bot. */
 	void SetTargetPawn(APawn* InTargetPawn);
+
+	/** Copies every tunable below from Profile. Safe to call with nullptr (no-op). */
+	UFUNCTION(BlueprintCallable, Category = "AI")
+	void ApplyDifficultyProfile(const UPvPAIDifficultyProfile* Profile);
 
 	virtual void Tick(float DeltaSeconds) override;
 

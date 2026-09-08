@@ -23,6 +23,7 @@
 #include "InputAction.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/PlayerController.h"
+#include "PvPPlayerController.h"
 #include "PvPArena.h"
 
 APvPCharacter::APvPCharacter()
@@ -369,11 +370,19 @@ void APvPCharacter::DoMove(float Right, float Forward)
 
 void APvPCharacter::DoLook(float Yaw, float Pitch)
 {
-	if (GetController() != nullptr)
+	if (AController* PawnController = GetController())
 	{
+		float Sensitivity = 1.f;
+		bool bInvertY = false;
+		if (const APvPPlayerController* PC = Cast<APvPPlayerController>(PawnController))
+		{
+			Sensitivity = PC->MouseSensitivity;
+			bInvertY = PC->bInvertY;
+		}
+
 		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		AddControllerYawInput(Yaw * Sensitivity);
+		AddControllerPitchInput(Pitch * Sensitivity * (bInvertY ? -1.f : 1.f));
 	}
 }
 

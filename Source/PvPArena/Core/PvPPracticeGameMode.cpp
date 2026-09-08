@@ -6,6 +6,7 @@
 #include "PvPPlayerController.h"
 #include "PvPHealthComponent.h"
 #include "PvPDeathmatchGameState.h"
+#include "PvPAIDifficultyProfile.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPArena.h"
 
@@ -26,6 +27,11 @@ void APvPPracticeGameMode::BeginPlay()
 	// Bot spawn is deferred to BeginMatch() -- see class comment. Player
 	// pawn spawn/possession happens automatically as part of the normal
 	// GameMode flow regardless.
+}
+
+void APvPPracticeGameMode::SetDifficultyProfile(UPvPAIDifficultyProfile* Profile)
+{
+	PendingDifficultyProfile = Profile;
 }
 
 void APvPPracticeGameMode::BeginMatch()
@@ -82,8 +88,10 @@ void APvPPracticeGameMode::SpawnBot()
 	{
 		BotController->Possess(BotPawn);
 		BotController->SetTargetPawn(PlayerPawn);
+		BotController->ApplyDifficultyProfile(PendingDifficultyProfile);
 		BotControllerRef = BotController;
-		UE_LOG(LogPvPArena, Log, TEXT("Practice bot spawned and possessed."));
+		UE_LOG(LogPvPArena, Log, TEXT("Practice bot spawned and possessed (difficulty=%s)."),
+			PendingDifficultyProfile ? *PendingDifficultyProfile->DifficultyName.ToString() : TEXT("default"));
 	}
 
 	if (APvPCharacter* BotChar = Cast<APvPCharacter>(BotPawn))
