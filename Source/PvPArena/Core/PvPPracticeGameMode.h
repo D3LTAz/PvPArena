@@ -39,8 +39,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Practice")
 	void SetDifficultyProfile(UPvPAIDifficultyProfile* Profile);
 
+	/** In-place rematch: resets scores, respawns both combatants at full health, re-arms the bot's engagement delay. Keeps the same difficulty. Called by APvPPlayerController::HandlePlayAgain() instead of reloading the level, so "play again" is actually a rematch, not a trip back to the main menu. */
+	UFUNCTION(BlueprintCallable, Category = "Practice")
+	void RestartMatch();
+
 protected:
 	virtual void BeginPlay() override;
+
+	/** Prefers the "PlayerSpawn"-tagged APlayerStart for the human player's initial spawn (falls back to Super's default selection if none exists) -- keeps the initial spawn consistent with HandleRespawn()'s tagged-start logic now that there are two PlayerStarts in the level. */
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 
 	/** Pawn class used for the AI bot. Defaults to the same class as the human player. */
 	UPROPERTY(EditDefaultsOnly, Category = "Practice")
@@ -68,6 +75,10 @@ private:
 	/** Bound to every combatant's UPvPHealthComponent::OnDeath -- scores the kill and checks the win condition. */
 	UFUNCTION()
 	void HandleAnyCombatantDeath(AActor* VictimActor, AController* InstigatorController);
+
+	/** Bound to the player's APvPCharacter::OnRespawned -- re-arms the bot's engagement delay. See BeginMatch() for why. */
+	UFUNCTION()
+	void HandlePlayerRespawned();
 
 	void EndMatchWithResult(bool bPlayerWon);
 

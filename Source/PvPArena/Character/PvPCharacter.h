@@ -20,6 +20,8 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPvPOnRespawnedSignature);
+
 UENUM(BlueprintType)
 enum class ECameraViewMode : uint8
 {
@@ -145,8 +147,15 @@ protected:
 	UFUNCTION()
 	void HandleDeath(AActor* InstigatorActor, AController* InstigatorController);
 
-	/** Fires RespawnDelaySeconds after death. Placeholder respawn-at-first-PlayerStart -- Phase E adds real team-aware spawn selection. */
+public:
+
+	/** Fires RespawnDelaySeconds after death, or callable directly (e.g. APvPPracticeGameMode::RestartMatch()). Public so the GameMode can force an immediate respawn without waiting on the timer. Picks a PlayerStart by APlayerStart::PlayerStartTag -- "PlayerSpawn" for player-controlled, "BotSpawn" for AI-controlled -- falling back to any PlayerStart if no tagged match exists. Broadcasts OnRespawned so systems like the AI's engagement delay can re-arm. */
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	void HandleRespawn();
+
+	/** Broadcast at the end of HandleRespawn(). APvPPracticeGameMode listens on the player's instance to re-arm the bot's engagement delay -- otherwise the bot can fire on you the instant you reappear, since its delay is measured from when it first acquired you as a target, not from your last respawn. */
+	UPROPERTY(BlueprintAssignable)
+	FPvPOnRespawnedSignature OnRespawned;
 
 public:
 

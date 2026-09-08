@@ -42,6 +42,9 @@ public:
 	/** Adds Amount to the given team's score (0 or 1). Server-only. */
 	void AddTeamScore(int32 TeamIndex, int32 Amount = 1);
 
+	/** Zeroes both teams' scores (rematch). Server-only. */
+	void ResetScores();
+
 	UFUNCTION()
 	void OnRep_TeamScores();
 

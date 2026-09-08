@@ -19,6 +19,20 @@ void APvPDeathmatchGameState::AddTeamScore(int32 TeamIndex, int32 Amount)
 	OnRep_TeamScores();
 }
 
+void APvPDeathmatchGameState::ResetScores()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	for (int32& Score : TeamScores)
+	{
+		Score = 0;
+	}
+	OnRep_TeamScores();
+}
+
 void APvPDeathmatchGameState::OnRep_TeamScores()
 {
 	// Placeholder hook for HUD score updates.

@@ -18,6 +18,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPDeathmatchGameState.h"
+#include "EngineUtils.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
@@ -326,7 +327,25 @@ void APvPCharacter::HandleRespawn()
 		}
 	}
 
-	if (APlayerStart* Start = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass())))
+	// Player and bot respawn at different tagged starts so they don't land
+	// on top of each other -- previously both used whichever PlayerStart
+	// GetActorOfClass happened to find first, i.e. the same one.
+	const bool bIsPlayerControlled = GetController() && GetController()->IsA<APlayerController>();
+	const FName DesiredTag = bIsPlayerControlled ? FName(TEXT("PlayerSpawn")) : FName(TEXT("BotSpawn"));
+
+	APlayerStart* ChosenStart = nullptr;
+	APlayerStart* FallbackStart = nullptr;
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+	{
+		FallbackStart = *It;
+		if (It->PlayerStartTag == DesiredTag)
+		{
+			ChosenStart = *It;
+			break;
+		}
+	}
+
+	if (APlayerStart* Start = ChosenStart ? ChosenStart : FallbackStart)
 	{
 		SetActorLocation(Start->GetActorLocation(), false, nullptr, ETeleportType::ResetPhysics);
 		SetActorRotation(Start->GetActorRotation());
@@ -346,6 +365,8 @@ void APvPCharacter::HandleRespawn()
 	}
 
 	UE_LOG(LogPvPArena, Log, TEXT("'%s' respawned."), *GetNameSafe(this));
+
+	OnRespawned.Broadcast();
 }
 
 void APvPCharacter::DoMove(float Right, float Forward)

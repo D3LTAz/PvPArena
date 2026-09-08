@@ -28,8 +28,14 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FPvPOnTutorialDismissedSignature OnDismissed;
 
+	/** Must be called before AddToViewport(). Controls the bottom prompt: standalone (opened from the menu's Tutorial destination) says "back to menu"; pre-match (opened after picking a difficulty) says "begin match". */
+	void InitFor(bool bInStandalone);
+
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
+private:
+	bool bStandalone = false;
 };

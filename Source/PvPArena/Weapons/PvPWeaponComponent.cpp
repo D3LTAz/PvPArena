@@ -63,6 +63,16 @@ void UPvPWeaponComponent::Fire()
 	{
 		return;
 	}
+
+	// Client-side early-out to avoid a pointless RPC when visibly empty --
+	// CurrentAmmo is replicated, so this is stale-safe; the server (in
+	// PerformServerTrace) is still the actual authority on whether the shot
+	// counts, same as damage.
+	if (CurrentAmmo <= 0)
+	{
+		return;
+	}
+
 	LastFireTime = Now;
 
 	UE_LOG(LogPvPArena, Log, TEXT("'%s' fired (weapon=%s)."), *GetNameSafe(Owner), WeaponData ? *WeaponData->GetName() : TEXT("none"));
@@ -93,6 +103,20 @@ void UPvPWeaponComponent::PerformServerTrace(const FVector& Origin, const FVecto
 	{
 		return;
 	}
+
+	// Authoritative ammo gate. No reload in this build -- CycleWeapon (Q) to
+	// a fresh weapon is the intended way to keep fighting once empty.
+	if (CurrentAmmo <= 0)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, TEXT("Out of ammo -- press Q to switch weapons"));
+		}
+		return;
+	}
+
+	--CurrentAmmo;
+	OnRep_CurrentAmmo();
 
 	const float Range = WeaponData ? WeaponData->MaxRange : 10000.f;
 	const FVector End = Origin + Direction * Range;

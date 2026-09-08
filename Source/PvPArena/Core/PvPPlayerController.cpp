@@ -170,6 +170,7 @@ void APvPPlayerController::HandleTutorialMenuRequested()
 	TutorialWidget = CreateWidget<UPvPTutorialWidget>(this, UPvPTutorialWidget::StaticClass());
 	if (TutorialWidget)
 	{
+		TutorialWidget->InitFor(true);
 		TutorialWidget->OnDismissed.AddDynamic(this, &APvPPlayerController::HandleDismissTutorial);
 		ShowUIOnlyWidget(TutorialWidget);
 	}
@@ -271,6 +272,7 @@ void APvPPlayerController::HandleDifficultySelected(UPvPAIDifficultyProfile* Sel
 	TutorialWidget = CreateWidget<UPvPTutorialWidget>(this, UPvPTutorialWidget::StaticClass());
 	if (TutorialWidget)
 	{
+		TutorialWidget->InitFor(false);
 		TutorialWidget->OnDismissed.AddDynamic(this, &APvPPlayerController::HandleDismissTutorial);
 		ShowUIOnlyWidget(TutorialWidget);
 	}
@@ -341,5 +343,31 @@ void APvPPlayerController::ShowMatchResult(bool bPlayerWon)
 
 void APvPPlayerController::HandlePlayAgain()
 {
-	UGameplayStatics::OpenLevel(this, TEXT("Lvl_PracticeRing"));
+	// In-place rematch, not a level reload -- a full OpenLevel would boot
+	// back to the main menu (BeginPlay always shows it), which "play again"
+	// shouldn't mean. Same difficulty, fresh scores, both combatants
+	// respawned.
+	if (MatchResultWidget)
+	{
+		MatchResultWidget->RemoveFromParent();
+		MatchResultWidget = nullptr;
+	}
+
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
+	{
+		HUDWidgetInstance = CreateWidget<UPvPHUDWidget>(this, UPvPHUDWidget::StaticClass());
+		if (HUDWidgetInstance)
+		{
+			HUDWidgetInstance->InitFor(PvPChar);
+			HUDWidgetInstance->AddToViewport(10);
+		}
+	}
+
+	if (APvPPracticeGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<APvPPracticeGameMode>() : nullptr)
+	{
+		GM->RestartMatch();
+	}
 }

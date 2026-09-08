@@ -7,8 +7,27 @@
 #include "PvPHealthComponent.h"
 #include "PvPDeathmatchGameState.h"
 #include "PvPAIDifficultyProfile.h"
+#include "GameFramework/PlayerStart.h"
+#include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPArena.h"
+
+namespace PvPPracticeGameModePrivate
+{
+	static APlayerStart* FindTaggedPlayerStart(UWorld* World, FName Tag)
+	{
+		APlayerStart* Fallback = nullptr;
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			Fallback = *It;
+			if (It->PlayerStartTag == Tag)
+			{
+				return *It;
+			}
+		}
+		return Fallback;
+	}
+}
 
 APvPPracticeGameMode::APvPPracticeGameMode()
 {
@@ -27,6 +46,16 @@ void APvPPracticeGameMode::BeginPlay()
 	// Bot spawn is deferred to BeginMatch() -- see class comment. Player
 	// pawn spawn/possession happens automatically as part of the normal
 	// GameMode flow regardless.
+}
+
+AActor* APvPPracticeGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	if (APlayerStart* Start = PvPPracticeGameModePrivate::FindTaggedPlayerStart(GetWorld(), FName(TEXT("PlayerSpawn"))))
+	{
+		return Start;
+	}
+
+	return Super::ChoosePlayerStart_Implementation(Player);
 }
 
 void APvPPracticeGameMode::SetDifficultyProfile(UPvPAIDifficultyProfile* Profile)
@@ -50,6 +79,13 @@ void APvPPracticeGameMode::BeginMatch()
 		{
 			Health->OnDeath.AddDynamic(this, &APvPPracticeGameMode::HandleAnyCombatantDeath);
 		}
+
+		// Re-arm the bot's engagement delay whenever the player respawns --
+		// otherwise TargetAcquiredTimeSeconds is still whatever it was from
+		// the original SetTargetPawn() call at bot spawn, so the delay has
+		// long since elapsed and the bot can fire the instant the player
+		// reappears.
+		PlayerChar->OnRespawned.AddDynamic(this, &APvPPracticeGameMode::HandlePlayerRespawned);
 	}
 
 	// Give the player pawn one extra frame to be fully settled before spawning the bot.
@@ -67,16 +103,28 @@ void APvPPracticeGameMode::SpawnBot()
 
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(World, 0);
 
+	// Spawn at the "BotSpawn"-tagged PlayerStart -- a fixed, known-good
+	// position inside the ring, rather than an offset from the player's
+	// current location/facing (which could place the bot outside the ring
+	// wall depending on where the player was standing, and which is what
+	// HandleRespawn() also now uses, so initial spawn and respawn agree).
 	FVector SpawnLocation = FVector::ZeroVector;
-	if (PlayerPawn)
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+	if (APlayerStart* BotStart = PvPPracticeGameModePrivate::FindTaggedPlayerStart(World, FName(TEXT("BotSpawn"))))
 	{
+		SpawnLocation = BotStart->GetActorLocation();
+		SpawnRotation = BotStart->GetActorRotation();
+	}
+	else if (PlayerPawn)
+	{
+		// Fallback if the level has no BotSpawn-tagged start.
 		SpawnLocation = PlayerPawn->GetActorLocation() + PlayerPawn->GetActorForwardVector() * BotSpawnDistance;
 	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	APawn* BotPawn = World->SpawnActor<APawn>(BotPawnClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+	APawn* BotPawn = World->SpawnActor<APawn>(BotPawnClass, SpawnLocation, SpawnRotation, SpawnParams);
 	if (!BotPawn)
 	{
 		UE_LOG(LogPvPArena, Error, TEXT("Failed to spawn practice bot pawn."));
@@ -99,6 +147,17 @@ void APvPPracticeGameMode::SpawnBot()
 		if (UPvPHealthComponent* Health = BotChar->GetHealthComponent())
 		{
 			Health->OnDeath.AddDynamic(this, &APvPPracticeGameMode::HandleAnyCombatantDeath);
+		}
+	}
+}
+
+void APvPPracticeGameMode::HandlePlayerRespawned()
+{
+	if (APvPAIController* BotController = BotControllerRef.Get())
+	{
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		{
+			BotController->SetTargetPawn(PlayerPawn);
 		}
 	}
 }
@@ -155,4 +214,44 @@ void APvPPracticeGameMode::EndMatchWithResult(bool bPlayerWon)
 	}
 
 	UE_LOG(LogPvPArena, Log, TEXT("Match ended -- player %s."), bPlayerWon ? TEXT("won") : TEXT("lost"));
+}
+
+void APvPPracticeGameMode::RestartMatch()
+{
+	APvPDeathmatchGameState* GS = GetGameState<APvPDeathmatchGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	bMatchEnded = false;
+	GS->ResetScores();
+	SetMatchState(EPvPMatchState::InProgress);
+
+	// HandleRespawn() is safe to call on a currently-alive character (it
+	// just re-teleports/re-heals it) as well as a dead one -- whoever WON
+	// the last match is still alive wherever the fight ended, so this needs
+	// to reset both combatants unconditionally, not just revive a corpse.
+	if (APvPCharacter* PlayerChar = Cast<APvPCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)))
+	{
+		PlayerChar->HandleRespawn();
+	}
+
+	if (APvPAIController* BotController = BotControllerRef.Get())
+	{
+		if (APvPCharacter* BotChar = Cast<APvPCharacter>(BotController->GetPawn()))
+		{
+			BotChar->HandleRespawn();
+		}
+
+		// HandlePlayerRespawned() (bound to the player's OnRespawned) already
+		// re-arms this, but the bot's own respawn above doesn't retarget --
+		// belt-and-suspenders in case ordering ever changes.
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		{
+			BotController->SetTargetPawn(PlayerPawn);
+		}
+	}
+
+	UE_LOG(LogPvPArena, Log, TEXT("Match restarted (rematch, same difficulty)."));
 }

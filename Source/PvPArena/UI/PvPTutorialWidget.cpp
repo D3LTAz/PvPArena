@@ -8,6 +8,11 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 
+void UPvPTutorialWidget::InitFor(bool bInStandalone)
+{
+	bStandalone = bInStandalone;
+}
+
 void UPvPTutorialWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -124,7 +129,7 @@ TSharedRef<SWidget> UPvPTutorialWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Press ENTER to begin")))
+					.Text(FText::FromString(bStandalone ? TEXT("Press ENTER to return to the menu") : TEXT("Press ENTER to begin")))
 					.Font(PromptFont)
 					.ColorAndOpacity(FLinearColor(1.f, 0.85f, 0.1f))
 				]
