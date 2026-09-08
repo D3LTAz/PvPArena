@@ -13,6 +13,8 @@
 #include "PvPHealthComponent.h"
 #include "PvPWeaponComponent.h"
 #include "PvPWeaponData.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
@@ -68,6 +70,16 @@ APvPCharacter::APvPCharacter()
 	// Server-authoritative hitscan fire
 	WeaponComponent = CreateDefaultSubobject<UPvPWeaponComponent>(TEXT("WeaponComponent"));
 
+	// Graybox stand-in for the held weapon -- attached to the capsule (not a
+	// hand bone) since there's no weapon-holding animation pose yet, so a
+	// bone attachment wouldn't look "held" anyway. Swapped per-weapon by
+	// HandleWeaponEquipped(). See UPvPWeaponData::PlaceholderMesh.
+	WeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMeshComponent"));
+	WeaponMeshComponent->SetupAttachment(GetCapsuleComponent());
+	WeaponMeshComponent->SetRelativeLocation(FVector(40.f, 25.f, 10.f));
+	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMeshComponent->SetCastShadow(false);
+
 	// Mesh/anim placeholder -- resolved directly here rather than via a
 	// Blueprint subclass (see the class comment for why).
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"));
@@ -117,6 +129,16 @@ void APvPCharacter::BeginPlay()
 	if (HealthComponent)
 	{
 		HealthComponent->OnDeath.AddDynamic(this, &APvPCharacter::HandleDeath);
+	}
+
+	if (WeaponComponent)
+	{
+		WeaponComponent->OnWeaponEquipped.AddDynamic(this, &APvPCharacter::HandleWeaponEquipped);
+
+		// Component BeginPlay (and its initial EquipWeapon broadcast) already
+		// ran before this Character BeginPlay body executes, so the bind
+		// above missed it -- sync explicitly for whatever's equipped now.
+		HandleWeaponEquipped(WeaponComponent->WeaponData);
 	}
 
 	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, BaseEyeHeight));
@@ -184,6 +206,26 @@ void APvPCharacter::HandleCycleWeaponInput()
 	if (WeaponComponent)
 	{
 		WeaponComponent->CycleWeapon();
+	}
+}
+
+void APvPCharacter::HandleWeaponEquipped(UPvPWeaponData* NewWeaponData)
+{
+	if (!WeaponMeshComponent)
+	{
+		return;
+	}
+
+	if (!NewWeaponData)
+	{
+		WeaponMeshComponent->SetStaticMesh(nullptr);
+		return;
+	}
+
+	if (UStaticMesh* PlaceholderMesh = NewWeaponData->PlaceholderMesh.LoadSynchronous())
+	{
+		WeaponMeshComponent->SetStaticMesh(PlaceholderMesh);
+		WeaponMeshComponent->SetRelativeScale3D(NewWeaponData->PlaceholderScale);
 	}
 }
 

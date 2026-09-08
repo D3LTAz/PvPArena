@@ -7,6 +7,7 @@
 #include "PvPWeaponData.generated.h"
 
 class USkeletalMesh;
+class UStaticMesh;
 class UNiagaraSystem;
 class USoundBase;
 
@@ -41,8 +42,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	int32 MaxAmmo = 30;
 
+	/** Real skeletal weapon mesh -- unused until proper art exists (see PlaceholderMesh). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
+
+	/** Graybox stand-in shown on the character until WeaponMesh has real art. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
+	TSoftObjectPtr<UStaticMesh> PlaceholderMesh;
+
+	/** Local scale applied to PlaceholderMesh (X = barrel/length axis). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
+	FVector PlaceholderScale = FVector(1.f, 0.2f, 0.2f);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
 	TSoftObjectPtr<UNiagaraSystem> MuzzleFlashFX;

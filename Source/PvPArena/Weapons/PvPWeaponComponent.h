@@ -8,6 +8,8 @@
 
 class UPvPWeaponData;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPvPOnWeaponEquippedSignature, UPvPWeaponData*, NewWeaponData);
+
 /**
  * Attached to APvPCharacter. Fire() is called locally on the owning client,
  * which sends a ServerFire RPC; the server performs an authoritative line
@@ -48,6 +50,10 @@ public:
 	/** Advances to the next weapon in AvailableWeapons, wrapping around. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void CycleWeapon();
+
+	/** Fires whenever EquipWeapon() changes WeaponData (including the initial equip in BeginPlay) -- the owning character listens to this to swap its held-weapon mesh. */
+	UPROPERTY(BlueprintAssignable, Category = "Weapon")
+	FPvPOnWeaponEquippedSignature OnWeaponEquipped;
 
 	UFUNCTION()
 	void OnRep_CurrentAmmo();

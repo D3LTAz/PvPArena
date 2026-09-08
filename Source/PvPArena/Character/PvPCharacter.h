@@ -14,6 +14,8 @@ class UCameraComponent;
 class UInputAction;
 class UPvPHealthComponent;
 class UPvPWeaponComponent;
+class UPvPWeaponData;
+class UStaticMeshComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -59,6 +61,10 @@ class APvPCharacter : public ACharacter
 	/** Server-authoritative hitscan fire */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPvPWeaponComponent> WeaponComponent;
+
+	/** Graybox stand-in for the currently equipped weapon (see UPvPWeaponData::PlaceholderMesh) -- swapped by HandleWeaponEquipped(). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 
 protected:
 
@@ -123,6 +129,10 @@ protected:
 
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
+
+	/** Bound to WeaponComponent::OnWeaponEquipped. Swaps WeaponMeshComponent's mesh/scale to match. */
+	UFUNCTION()
+	void HandleWeaponEquipped(UPvPWeaponData* NewWeaponData);
 
 	/** Single source of truth for what changes between 1st/3rd person. */
 	void ApplyViewMode(ECameraViewMode NewMode);
