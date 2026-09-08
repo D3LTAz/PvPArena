@@ -52,9 +52,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Practice")
 	float BotSpawnDistance = 900.f;
 
+	/** First combatant (player = team 0, bot = team 1, tracked via
+	 * APvPDeathmatchGameState::TeamScores) to reach this many kills wins. */
+	UPROPERTY(EditDefaultsOnly, Category = "Practice")
+	int32 KillsToWin = 3;
+
 private:
 	void SpawnBot();
 
+	/** Bound to every combatant's UPvPHealthComponent::OnDeath -- scores the kill and checks the win condition. */
+	UFUNCTION()
+	void HandleAnyCombatantDeath(AActor* VictimActor, AController* InstigatorController);
+
+	void EndMatchWithResult(bool bPlayerWon);
+
 	FTimerHandle SpawnBotTimerHandle;
 	bool bMatchStarted = false;
+	bool bMatchEnded = false;
+
+	TWeakObjectPtr<APvPAIController> BotControllerRef;
 };

@@ -8,7 +8,11 @@
 #include "Blueprint/UserWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "PvPTutorialWidget.h"
+#include "PvPHUDWidget.h"
+#include "PvPMatchResultWidget.h"
 #include "PvPPracticeGameMode.h"
+#include "PvPCharacter.h"
+#include "Kismet/GameplayStatics.h"
 #include "PvPArena.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -113,8 +117,51 @@ void APvPPlayerController::HandleDismissTutorial()
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
 
+	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
+	{
+		HUDWidgetInstance = CreateWidget<UPvPHUDWidget>(this, UPvPHUDWidget::StaticClass());
+		if (HUDWidgetInstance)
+		{
+			HUDWidgetInstance->InitFor(PvPChar);
+			HUDWidgetInstance->AddToViewport(10);
+		}
+	}
+
 	if (APvPPracticeGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<APvPPracticeGameMode>() : nullptr)
 	{
 		GM->BeginMatch();
 	}
+}
+
+void APvPPlayerController::ShowMatchResult(bool bPlayerWon)
+{
+	if (HUDWidgetInstance)
+	{
+		HUDWidgetInstance->RemoveFromParent();
+		HUDWidgetInstance = nullptr;
+	}
+
+	if (MatchResultWidget)
+	{
+		return;
+	}
+
+	MatchResultWidget = CreateWidget<UPvPMatchResultWidget>(this, UPvPMatchResultWidget::StaticClass());
+	if (MatchResultWidget)
+	{
+		MatchResultWidget->InitFor(bPlayerWon);
+		MatchResultWidget->AddToViewport(100);
+		MatchResultWidget->OnPlayAgain.AddDynamic(this, &APvPPlayerController::HandlePlayAgain);
+
+		bShowMouseCursor = true;
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(MatchResultWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+	}
+}
+
+void APvPPlayerController::HandlePlayAgain()
+{
+	UGameplayStatics::OpenLevel(this, TEXT("Lvl_PracticeRing"));
 }

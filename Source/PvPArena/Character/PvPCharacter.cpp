@@ -17,6 +17,7 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
+#include "PvPDeathmatchGameState.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
@@ -143,7 +144,15 @@ void APvPCharacter::BeginPlay()
 		HandleWeaponEquipped(WeaponComponent->WeaponData);
 	}
 
-	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, BaseEyeHeight));
+	// FirstPersonCamera is attached to the capsule, whose origin is its own
+	// CENTER (HalfHeight above the floor) -- so a relative Z offset here is
+	// "above center," not "above the floor." BaseEyeHeight (a flat engine
+	// default of 64, unrelated to this capsule's actual HalfHeight) was being
+	// used as that offset, which put the camera well below where the eyes
+	// actually are: near the top of the capsule, not 64 units above its
+	// center. Placing it just under the top of the capsule instead.
+	const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	FirstPersonCamera->SetRelativeLocation(FVector(10.f, 0.f, CapsuleHalfHeight - 12.f));
 	ApplyViewMode(CurrentViewMode);
 }
 
@@ -304,6 +313,16 @@ void APvPCharacter::HandleRespawn()
 	if (!HasAuthority())
 	{
 		return;
+	}
+
+	if (const APvPDeathmatchGameState* GS = GetWorld() ? GetWorld()->GetGameState<APvPDeathmatchGameState>() : nullptr)
+	{
+		if (GS->CurrentMatchState == EPvPMatchState::Ending)
+		{
+			// Match is already decided -- stay dead/hidden rather than
+			// popping back up behind the victory/defeat screen.
+			return;
+		}
 	}
 
 	if (APlayerStart* Start = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass())))

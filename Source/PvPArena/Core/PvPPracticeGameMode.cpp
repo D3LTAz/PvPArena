@@ -4,6 +4,8 @@
 #include "PvPAIController.h"
 #include "PvPCharacter.h"
 #include "PvPPlayerController.h"
+#include "PvPHealthComponent.h"
+#include "PvPDeathmatchGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPArena.h"
 
@@ -35,6 +37,14 @@ void APvPPracticeGameMode::BeginMatch()
 	bMatchStarted = true;
 
 	SetMatchState(EPvPMatchState::InProgress);
+
+	if (APvPCharacter* PlayerChar = Cast<APvPCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0)))
+	{
+		if (UPvPHealthComponent* Health = PlayerChar->GetHealthComponent())
+		{
+			Health->OnDeath.AddDynamic(this, &APvPPracticeGameMode::HandleAnyCombatantDeath);
+		}
+	}
 
 	// Give the player pawn one extra frame to be fully settled before spawning the bot.
 	GetWorldTimerManager().SetTimer(SpawnBotTimerHandle, this, &APvPPracticeGameMode::SpawnBot, 0.2f, false);
@@ -72,6 +82,69 @@ void APvPPracticeGameMode::SpawnBot()
 	{
 		BotController->Possess(BotPawn);
 		BotController->SetTargetPawn(PlayerPawn);
+		BotControllerRef = BotController;
 		UE_LOG(LogPvPArena, Log, TEXT("Practice bot spawned and possessed."));
 	}
+
+	if (APvPCharacter* BotChar = Cast<APvPCharacter>(BotPawn))
+	{
+		if (UPvPHealthComponent* Health = BotChar->GetHealthComponent())
+		{
+			Health->OnDeath.AddDynamic(this, &APvPPracticeGameMode::HandleAnyCombatantDeath);
+		}
+	}
+}
+
+void APvPPracticeGameMode::HandleAnyCombatantDeath(AActor* VictimActor, AController* InstigatorController)
+{
+	if (bMatchEnded)
+	{
+		return;
+	}
+
+	APvPDeathmatchGameState* GS = GetGameState<APvPDeathmatchGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	const APawn* VictimPawn = Cast<APawn>(VictimActor);
+	const bool bVictimIsPlayer = VictimPawn && VictimPawn->IsPlayerControlled();
+
+	// Award the kill to whichever side did NOT die: team 0 = player, team 1 = bot.
+	const int32 ScoringTeam = bVictimIsPlayer ? 1 : 0;
+	GS->AddTeamScore(ScoringTeam, 1);
+
+	const int32 PlayerScore = GS->TeamScores.IsValidIndex(0) ? GS->TeamScores[0] : 0;
+	const int32 BotScore = GS->TeamScores.IsValidIndex(1) ? GS->TeamScores[1] : 0;
+
+	UE_LOG(LogPvPArena, Log, TEXT("Score -- You: %d  Bot: %d"), PlayerScore, BotScore);
+
+	if (PlayerScore >= KillsToWin)
+	{
+		EndMatchWithResult(true);
+	}
+	else if (BotScore >= KillsToWin)
+	{
+		EndMatchWithResult(false);
+	}
+}
+
+void APvPPracticeGameMode::EndMatchWithResult(bool bPlayerWon)
+{
+	bMatchEnded = true;
+	SetMatchState(EPvPMatchState::Ending);
+
+	// Stop the bot from continuing to chase/fire once the match is decided.
+	if (APvPAIController* BotController = BotControllerRef.Get())
+	{
+		BotController->SetTargetPawn(nullptr);
+	}
+
+	if (APvPPlayerController* PC = Cast<APvPPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+	{
+		PC->ShowMatchResult(bPlayerWon);
+	}
+
+	UE_LOG(LogPvPArena, Log, TEXT("Match ended -- player %s."), bPlayerWon ? TEXT("won") : TEXT("lost"));
 }
