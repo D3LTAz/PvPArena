@@ -122,6 +122,8 @@ void APvPPlayerController::SetupInputComponent()
 			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
 			{
 				Subsystem->AddMappingContext(CurrentContext, 0);
+				UE_LOG(LogPvPArena, Log, TEXT("Added mapping context '%s'. HasMappingContext=%s"),
+					*GetNameSafe(CurrentContext), Subsystem->HasMappingContext(CurrentContext) ? TEXT("true") : TEXT("false"));
 			}
 
 			// only add these IMCs if we're not using mobile touch input
@@ -130,6 +132,8 @@ void APvPPlayerController::SetupInputComponent()
 				for (UInputMappingContext* CurrentContext : MobileExcludedMappingContexts)
 				{
 					Subsystem->AddMappingContext(CurrentContext, 0);
+					UE_LOG(LogPvPArena, Log, TEXT("Added mapping context '%s'. HasMappingContext=%s"),
+						*GetNameSafe(CurrentContext), Subsystem->HasMappingContext(CurrentContext) ? TEXT("true") : TEXT("false"));
 				}
 			}
 		}
