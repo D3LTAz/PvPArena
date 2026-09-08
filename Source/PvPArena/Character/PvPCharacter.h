@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "TimerManager.h"
+#include "Camera/PlayerCameraManager.h"
 #include "PvPCharacter.generated.h"
 
 class USpringArmComponent;
@@ -16,6 +17,13 @@ class UPvPWeaponComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+
+UENUM(BlueprintType)
+enum class ECameraViewMode : uint8
+{
+	ThirdPerson,
+	FirstPerson
+};
 
 /**
  *  Player-controllable character. Standard UCharacterMovementComponent --
@@ -36,9 +44,13 @@ class APvPCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
-	/** Follow camera */
+	/** Follow camera (third-person) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** First-person camera, attached to the capsule at eye height (animation-independent). Inactive by default. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
 	/** Replicated health, server-authoritative damage, OnDeath delegate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
@@ -73,6 +85,19 @@ protected:
 	/** Handle to the placeholder respawn timer started on death (Phase E replaces this with real respawn-at-PlayerStart). */
 	FTimerHandle RespawnTimerHandle;
 
+	/** True = blend camera views via SetViewTargetWithBlend. False = instant cut. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
+	bool bSmoothCameraTransition = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera", meta = (EditCondition = "bSmoothCameraTransition", ClampMin = "0.0"))
+	float CameraBlendTime = 0.35f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+	TEnumAsByte<EViewTargetBlendFunction> CameraBlendFunction = VTBlend_Cubic;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Camera")
+	ECameraViewMode CurrentViewMode = ECameraViewMode::ThirdPerson;
+
 public:
 
 	/** Constructor */
@@ -99,6 +124,9 @@ protected:
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
 
+	/** Single source of truth for what changes between 1st/3rd person. */
+	void ApplyViewMode(ECameraViewMode NewMode);
+
 	/** Bound to HealthComponent::OnDeath. Hides/disables the character and starts the respawn timer stub. */
 	UFUNCTION()
 	void HandleDeath(AActor* InstigatorActor, AController* InstigatorController);
@@ -120,6 +148,17 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+
+	/** Toggles between 1st- and 3rd-person view. Bound to F11 by default. */
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	void ToggleCameraView();
+
+	/** Explicitly set the view mode (no-ops if already in NewMode). */
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	void SetCameraViewMode(ECameraViewMode NewMode);
+
+	UFUNCTION(BlueprintPure, Category = "Camera")
+	bool IsFirstPerson() const { return CurrentViewMode == ECameraViewMode::FirstPerson; }
 
 public:
 

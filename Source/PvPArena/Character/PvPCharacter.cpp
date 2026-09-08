@@ -17,6 +17,7 @@
 #include "InputMappingContext.h"
 #include "InputAction.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameFramework/PlayerController.h"
 #include "PvPArena.h"
 
 APvPCharacter::APvPCharacter()
@@ -52,6 +53,14 @@ APvPCharacter::APvPCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	// First-person camera -- attached to the capsule (not a head socket) so
+	// it's animation-independent; eye height is set in BeginPlay once
+	// BaseEyeHeight is valid. Inactive until toggled via F11.
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCamera->bUsePawnControlRotation = true;
+	FirstPersonCamera->SetAutoActivate(false);
 
 	// Replicated health / server-authoritative damage
 	HealthComponent = CreateDefaultSubobject<UPvPHealthComponent>(TEXT("HealthComponent"));
@@ -109,6 +118,9 @@ void APvPCharacter::BeginPlay()
 	{
 		HealthComponent->OnDeath.AddDynamic(this, &APvPCharacter::HandleDeath);
 	}
+
+	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, BaseEyeHeight));
+	ApplyViewMode(CurrentViewMode);
 }
 
 void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -135,9 +147,10 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		UE_LOG(LogPvPArena, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 
-	// Weapon cycling: bound via the legacy raw-key path rather than an Input
-	// Action asset -- no IMC key-mapping required for this one.
+	// Weapon cycling and camera toggle: bound via the legacy raw-key path
+	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
+	PlayerInputComponent->BindKey(EKeys::F11, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)
@@ -171,6 +184,56 @@ void APvPCharacter::HandleCycleWeaponInput()
 	if (WeaponComponent)
 	{
 		WeaponComponent->CycleWeapon();
+	}
+}
+
+void APvPCharacter::ToggleCameraView()
+{
+	const ECameraViewMode NewMode = (CurrentViewMode == ECameraViewMode::ThirdPerson)
+		? ECameraViewMode::FirstPerson
+		: ECameraViewMode::ThirdPerson;
+
+	SetCameraViewMode(NewMode);
+}
+
+void APvPCharacter::SetCameraViewMode(ECameraViewMode NewMode)
+{
+	if (NewMode == CurrentViewMode)
+	{
+		return;
+	}
+
+	CurrentViewMode = NewMode;
+	ApplyViewMode(NewMode);
+}
+
+void APvPCharacter::ApplyViewMode(ECameraViewMode NewMode)
+{
+	const bool bFirstPerson = (NewMode == ECameraViewMode::FirstPerson);
+
+	// --- Active camera ---
+	FollowCamera->SetActive(!bFirstPerson);
+	FirstPersonCamera->SetActive(bFirstPerson);
+
+	// --- Body visibility: hide from the LOCAL owner's own camera only --
+	// other clients in multiplayer still see the full body either way. ---
+	GetMesh()->SetOwnerNoSee(bFirstPerson);
+
+	// --- Rotation behavior ---
+	bUseControllerRotationYaw = bFirstPerson;
+	GetCharacterMovement()->bOrientRotationToMovement = !bFirstPerson;
+
+	// --- Apply the view change (instant or blended, same call either way) ---
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (bSmoothCameraTransition)
+		{
+			PC->SetViewTargetWithBlend(this, CameraBlendTime, CameraBlendFunction);
+		}
+		else
+		{
+			PC->SetViewTarget(this);
+		}
 	}
 }
 
