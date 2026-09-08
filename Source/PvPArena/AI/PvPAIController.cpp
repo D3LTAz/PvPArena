@@ -73,7 +73,18 @@ void APvPAIController::Tick(float DeltaSeconds)
 			{
 				if (UPvPWeaponComponent* Weapon = PvPCharacter->GetWeaponComponent())
 				{
-					Weapon->Fire();
+					// The bot has no reload and shares the same empty-clip gate
+					// as the player, but nothing ever presses "Q" for it --
+					// left alone, an emptied bot just stands there attempting
+					// to fire nothing for the rest of the match.
+					if (Weapon->CurrentAmmo <= 0)
+					{
+						Weapon->CycleWeapon();
+					}
+					else
+					{
+						Weapon->Fire();
+					}
 				}
 			}
 		}

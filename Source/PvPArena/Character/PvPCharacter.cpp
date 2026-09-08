@@ -331,6 +331,12 @@ void APvPCharacter::HandleRespawn()
 		return;
 	}
 
+	// RestartMatch() (in-place rematch) calls this directly, but a death that
+	// happened right before "Play Again" leaves the death-triggered timer
+	// (see HandleDeath) still pending -- clear it or it fires again mid-
+	// rematch and re-teleports/re-arms everything a second time.
+	GetWorldTimerManager().ClearTimer(RespawnTimerHandle);
+
 	if (const APvPDeathmatchGameState* GS = GetWorld() ? GetWorld()->GetGameState<APvPDeathmatchGameState>() : nullptr)
 	{
 		if (GS->CurrentMatchState == EPvPMatchState::Ending)
@@ -376,6 +382,15 @@ void APvPCharacter::HandleRespawn()
 	if (HealthComponent)
 	{
 		HealthComponent->ResetHealth();
+	}
+
+	// Re-equipping the currently-held weapon refills CurrentAmmo to its max
+	// (see EquipWeapon) -- without this, dying/respawning (or a rematch)
+	// with an empty or partial clip carries that over, forcing an immediate
+	// Q-cycle before the fight can continue.
+	if (WeaponComponent)
+	{
+		WeaponComponent->EquipWeapon(WeaponComponent->WeaponData);
 	}
 
 	UE_LOG(LogPvPArena, Log, TEXT("'%s' respawned."), *GetNameSafe(this));
