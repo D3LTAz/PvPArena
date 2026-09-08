@@ -48,7 +48,13 @@ void UPvPWeaponComponent::Fire()
 	AActor* Owner = GetOwner();
 	if (!Owner)
 	{
+		UE_LOG(LogPvPArena, Warning, TEXT("WeaponComponent::Fire() called with no Owner."));
 		return;
+	}
+
+	if (!WeaponData)
+	{
+		UE_LOG(LogPvPArena, Warning, TEXT("WeaponComponent::Fire() on '%s' -- WeaponData is null, nothing equipped."), *GetNameSafe(Owner));
 	}
 
 	const float FireInterval = WeaponData ? WeaponData->GetFireInterval() : 0.2f;
@@ -58,6 +64,8 @@ void UPvPWeaponComponent::Fire()
 		return;
 	}
 	LastFireTime = Now;
+
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' fired (weapon=%s)."), *GetNameSafe(Owner), WeaponData ? *WeaponData->GetName() : TEXT("none"));
 
 	FVector EyeLocation;
 	FRotator EyeRotation;
@@ -74,6 +82,7 @@ void UPvPWeaponComponent::Fire()
 
 void UPvPWeaponComponent::ServerFire_Implementation(FVector_NetQuantize Origin, FVector_NetQuantizeNormal Direction)
 {
+	UE_LOG(LogPvPArena, Verbose, TEXT("ServerFire_Implementation on '%s'."), *GetNameSafe(GetOwner()));
 	PerformServerTrace(Origin, Direction);
 }
 
@@ -96,11 +105,34 @@ void UPvPWeaponComponent::PerformServerTrace(const FVector& Origin, const FVecto
 
 	if (bHit)
 	{
+		UE_LOG(LogPvPArena, Log, TEXT("'%s' trace hit '%s'."), *GetNameSafe(Owner), *GetNameSafe(Hit.GetActor()));
+
 		if (UPvPHealthComponent* HitHealth = Hit.GetActor() ? Hit.GetActor()->FindComponentByClass<UPvPHealthComponent>() : nullptr)
 		{
 			APawn* OwnerPawn = Cast<APawn>(Owner);
 			AController* InstigatorController = OwnerPawn ? OwnerPawn->GetController() : nullptr;
-			HitHealth->ServerApplyDamage(WeaponData ? WeaponData->Damage : 10.f, InstigatorController);
+			const float DamageDealt = WeaponData ? WeaponData->Damage : 10.f;
+			HitHealth->ServerApplyDamage(DamageDealt, InstigatorController);
+
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.5f, FColor::Red,
+					FString::Printf(TEXT("HIT %s for %.0f (hp now %.0f)"), *GetNameSafe(Hit.GetActor()), DamageDealt, HitHealth->CurrentHealth));
+			}
+		}
+		else if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.5f, FColor::Yellow,
+				FString::Printf(TEXT("Hit %s (no health component)"), *GetNameSafe(Hit.GetActor())));
+		}
+	}
+	else
+	{
+		UE_LOG(LogPvPArena, Verbose, TEXT("'%s' trace missed."), *GetNameSafe(Owner));
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, TEXT("Shot fired (no hit)"));
 		}
 	}
 
@@ -113,7 +145,11 @@ void UPvPWeaponComponent::MulticastConfirmedHit_Implementation(FVector_NetQuanti
 #if ENABLE_DRAW_DEBUG
 	if (UWorld* World = GetWorld())
 	{
-		DrawDebugLine(World, TraceStart, ImpactPoint, bHit ? FColor::Red : FColor::Yellow, false, 0.5f, 0, 1.5f);
+		DrawDebugLine(World, TraceStart, ImpactPoint, bHit ? FColor::Red : FColor::Yellow, false, 1.5f, 0, 3.f);
+		if (bHit)
+		{
+			DrawDebugSphere(World, ImpactPoint, 15.f, 8, FColor::Red, false, 1.5f);
+		}
 	}
 #endif
 }
