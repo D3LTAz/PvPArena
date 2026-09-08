@@ -166,7 +166,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
-	/** Toggles between 1st- and 3rd-person view. Bound to F11 by default. */
+	/** Toggles between 1st- and 3rd-person view. Bound to V by default. */
 	UFUNCTION(BlueprintCallable, Category = "Camera")
 	void ToggleCameraView();
 

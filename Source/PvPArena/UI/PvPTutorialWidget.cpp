@@ -116,7 +116,7 @@ TSharedRef<SWidget> UPvPTutorialWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4, 0, 32)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("F11 -- Toggle 1st / 3rd Person Camera")))
+					.Text(FText::FromString(TEXT("V -- Toggle 1st / 3rd Person Camera")))
 					.Font(BodyFont)
 					.ColorAndOpacity(FLinearColor::White)
 				]

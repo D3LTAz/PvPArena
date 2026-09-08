@@ -61,7 +61,7 @@ APvPCharacter::APvPCharacter()
 
 	// First-person camera -- attached to the capsule (not a head socket) so
 	// it's animation-independent; eye height is set in BeginPlay once
-	// BaseEyeHeight is valid. Inactive until toggled via F11.
+	// BaseEyeHeight is valid. Inactive until toggled via V.
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCamera->bUsePawnControlRotation = true;
@@ -183,7 +183,7 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// Weapon cycling and camera toggle: bound via the legacy raw-key path
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
-	PlayerInputComponent->BindKey(EKeys::F11, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
+	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)

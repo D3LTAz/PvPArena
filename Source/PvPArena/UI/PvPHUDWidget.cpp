@@ -77,6 +77,10 @@ TSharedRef<SWidget> UPvPHUDWidget::RebuildWidget()
 	const FSlateFontInfo ScoreFont = FCoreStyle::GetDefaultFontStyle("Bold", 24);
 
 	return SNew(SOverlay)
+	// Pure display, no interactive elements -- must NOT intercept mouse
+	// input, or clicks (e.g. Left Click to fire) get swallowed by this
+	// full-screen overlay before they ever reach the game/Enhanced Input.
+	.Visibility(EVisibility::HitTestInvisible)
 
 	// Bottom-left: health / weapon / ammo
 	+ SOverlay::Slot()
