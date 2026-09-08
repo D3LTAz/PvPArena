@@ -63,7 +63,8 @@ protected:
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
 
-	/** Bound to Enter via the legacy raw-key path. Removes TutorialWidget and starts the match. */
+	/** Bound to TutorialWidget::OnDismissed. Removes TutorialWidget and starts the match. */
+	UFUNCTION()
 	void HandleDismissTutorial();
 
 };

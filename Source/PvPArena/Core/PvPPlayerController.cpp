@@ -56,9 +56,11 @@ void APvPPlayerController::BeginPlay()
 		if (TutorialWidget)
 		{
 			TutorialWidget->AddToViewport(100);
+			TutorialWidget->OnDismissed.AddDynamic(this, &APvPPlayerController::HandleDismissTutorial);
 
 			bShowMouseCursor = true;
 			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(TutorialWidget->TakeWidget());
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(InputMode);
 		}
@@ -90,8 +92,6 @@ void APvPPlayerController::SetupInputComponent()
 			}
 		}
 	}
-
-	InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &APvPPlayerController::HandleDismissTutorial);
 }
 
 bool APvPPlayerController::ShouldUseTouchControls() const

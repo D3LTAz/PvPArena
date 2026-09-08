@@ -8,6 +8,25 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 
+void UPvPTutorialWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetIsFocusable(true);
+	SetKeyboardFocus();
+}
+
+FReply UPvPTutorialWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Enter)
+	{
+		OnDismissed.Broadcast();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
 TSharedRef<SWidget> UPvPTutorialWidget::RebuildWidget()
 {
 	const FSlateFontInfo TitleFont = FCoreStyle::GetDefaultFontStyle("Bold", 32);
