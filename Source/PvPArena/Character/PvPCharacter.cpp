@@ -160,6 +160,9 @@ void APvPCharacter::BeginPlay()
 
 void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' SetupPlayerInputComponent called. FireAction=%s"),
+		*GetNameSafe(this), FireAction ? *FireAction->GetName() : TEXT("NULL"));
+
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 
@@ -175,7 +178,15 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APvPCharacter::Look);
 
 		// Firing
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &APvPCharacter::HandleFireInput);
+		if (FireAction)
+		{
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &APvPCharacter::HandleFireInput);
+			UE_LOG(LogPvPArena, Log, TEXT("'%s' bound FireAction to HandleFireInput."), *GetNameSafe(this));
+		}
+		else
+		{
+			UE_LOG(LogPvPArena, Error, TEXT("'%s' FireAction is NULL -- fire input cannot be bound."), *GetNameSafe(this));
+		}
 	}
 	else
 	{
@@ -208,6 +219,9 @@ void APvPCharacter::Look(const FInputActionValue& Value)
 
 void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
 {
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' HandleFireInput called (WeaponComponent=%s)."),
+		*GetNameSafe(this), WeaponComponent ? TEXT("valid") : TEXT("NULL"));
+
 	if (WeaponComponent)
 	{
 		WeaponComponent->Fire();
