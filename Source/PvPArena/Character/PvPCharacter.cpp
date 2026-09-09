@@ -207,7 +207,21 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
-	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleLegacyFireKeyDiagnostic);
+
+	// Mouse buttons never reach Enhanced Input in this project (see e356bbc /
+	// 8c71083). Fire on the same BindKey path that already receives LMB.
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Released, this, &APvPCharacter::HandleFireReleased);
+}
+
+void APvPCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bFireHeld && WeaponComponent)
+	{
+		WeaponComponent->Fire();
+	}
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)
@@ -239,9 +253,19 @@ void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
 	}
 }
 
-void APvPCharacter::HandleLegacyFireKeyDiagnostic()
+void APvPCharacter::HandleFirePressed()
 {
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' Legacy LeftMouseButton IE_Pressed received (raw input path, bypasses Enhanced Input)."), *GetNameSafe(this));
+	bFireHeld = true;
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' LMB pressed -- firing via BindKey (not Enhanced Input)."), *GetNameSafe(this));
+	if (WeaponComponent)
+	{
+		WeaponComponent->Fire();
+	}
+}
+
+void APvPCharacter::HandleFireReleased()
+{
+	bFireHeld = false;
 }
 
 void APvPCharacter::HandleFireInputDiagnosticStarted(const FInputActionValue& Value)

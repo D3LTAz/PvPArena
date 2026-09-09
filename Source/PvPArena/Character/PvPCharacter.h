@@ -119,6 +119,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -142,16 +144,14 @@ protected:
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
 
-	/**
-	 * DIAGNOSTIC ONLY. Bound directly to LeftMouseButton via the same legacy
-	 * raw-key path already proven to work for Q/V -- bypasses Enhanced Input
-	 * entirely. If this never logs on click, the click isn't reaching the
-	 * PlayerController's input component at all (a Slate/viewport/mouse-
-	 * capture problem). If it DOES log but HandleFireInput still doesn't,
-	 * the problem is specific to IA_Fire's Enhanced Input trigger evaluation.
-	 * Remove once the fire-input bug is resolved.
-	 */
-	void HandleLegacyFireKeyDiagnostic();
+	/** Left mouse: same raw BindKey path as Q/V. Enhanced Input has never
+	 *  delivered mouse buttons to IA_Fire in this project (legacy diagnostic
+	 *  logged every click; HandleFireInput never ran). This is the real fire
+	 *  bind, not a log-only probe. */
+	void HandleFirePressed();
+	void HandleFireReleased();
+
+	bool bFireHeld = false;
 
 	/** Bound to WeaponComponent::OnWeaponEquipped. Swaps WeaponMeshComponent's mesh/scale to match. */
 	UFUNCTION()
