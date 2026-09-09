@@ -21,6 +21,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "AudioDevice.h"
 #include "PvPArena.h"
+#include "PvPWeaponComponent.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 APvPPlayerController::APvPPlayerController()
@@ -138,6 +140,11 @@ void APvPPlayerController::SetupInputComponent()
 			}
 		}
 	}
+
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::F, IE_Pressed, this, &APvPPlayerController::HandleKeyboardFire);
+	}
 }
 
 bool APvPPlayerController::ShouldUseTouchControls() const
@@ -155,11 +162,66 @@ void APvPPlayerController::ShowUIOnlyWidget(UUserWidget* Widget)
 
 	Widget->AddToViewport(100);
 
+	bGameplayInputEnabled = false;
 	bShowMouseCursor = true;
 	FInputModeUIOnly InputMode;
 	InputMode.SetWidgetToFocus(Widget->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
+}
+
+void APvPPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+	TryFireFromMouse();
+}
+
+void APvPPlayerController::TryFireFromMouse()
+{
+	if (bShowMouseCursor)
+	{
+		return;
+	}
+
+	if (!bGameplayInputEnabled)
+	{
+		return;
+	}
+
+	bool bLeftMouseDown = IsInputKeyDown(EKeys::LeftMouseButton);
+	if (!bLeftMouseDown && FSlateApplication::IsInitialized())
+	{
+		bLeftMouseDown = FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::LeftMouseButton);
+	}
+
+	if (!bLeftMouseDown && !IsInputKeyDown(EKeys::F))
+	{
+		return;
+	}
+
+	FireOwnedWeapon();
+}
+
+void APvPPlayerController::HandleKeyboardFire()
+{
+	if (bShowMouseCursor)
+	{
+		return;
+	}
+
+	FireOwnedWeapon();
+}
+
+void APvPPlayerController::FireOwnedWeapon()
+{
+	APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn());
+	UPvPWeaponComponent* Weapon = PvPChar ? PvPChar->GetWeaponComponent() : nullptr;
+	if (!Weapon)
+	{
+		return;
+	}
+
+	Weapon->Fire();
 }
 
 void APvPPlayerController::HandleTutorialMenuRequested()
@@ -305,6 +367,13 @@ void APvPPlayerController::HandleDismissTutorial()
 
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+	bGameplayInputEnabled = true;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(999, 8.f, FColor::Green,
+			TEXT("FIRE BUILD 3 — hold LMB or press F. Green FIRE = shot registered."));
+	}
 
 	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
 	{
@@ -359,6 +428,7 @@ void APvPPlayerController::HandlePlayAgain()
 
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+	bGameplayInputEnabled = true;
 
 	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
 	{

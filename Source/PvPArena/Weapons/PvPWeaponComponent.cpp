@@ -75,7 +75,20 @@ void UPvPWeaponComponent::Fire()
 
 	LastFireTime = Now;
 
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' fired (weapon=%s)."), *GetNameSafe(Owner), WeaponData ? *WeaponData->GetName() : TEXT("none"));
+	if (Owner->HasAuthority())
+	{
+		--CurrentAmmo;
+		OnRep_CurrentAmmo();
+	}
+
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' fired (weapon=%s ammo=%d)."),
+		*GetNameSafe(Owner), WeaponData ? *WeaponData->GetName() : TEXT("none"), CurrentAmmo);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.2f, FColor::Green,
+			FString::Printf(TEXT("FIRE ammo=%d"), CurrentAmmo));
+	}
 
 	FVector EyeLocation;
 	FRotator EyeRotation;
@@ -87,7 +100,17 @@ void UPvPWeaponComponent::Fire()
 		Direction = FMath::VRandCone(Direction, FMath::DegreesToRadians(WeaponData->SpreadDegrees));
 	}
 
-	ServerFire(EyeLocation, Direction);
+	// Listen-server / AI: call the trace directly. A Server RPC on a
+	// replicated component can be dropped when there is no remote
+	// connection, which left CurrentAmmo stuck at max even after Fire().
+	if (Owner->HasAuthority())
+	{
+		PerformServerTrace(EyeLocation, Direction);
+	}
+	else
+	{
+		ServerFire(EyeLocation, Direction);
+	}
 }
 
 void UPvPWeaponComponent::ServerFire_Implementation(FVector_NetQuantize Origin, FVector_NetQuantizeNormal Direction)
@@ -103,20 +126,6 @@ void UPvPWeaponComponent::PerformServerTrace(const FVector& Origin, const FVecto
 	{
 		return;
 	}
-
-	// Authoritative ammo gate. No reload in this build -- CycleWeapon (Q) to
-	// a fresh weapon is the intended way to keep fighting once empty.
-	if (CurrentAmmo <= 0)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, TEXT("Out of ammo -- press Q to switch weapons"));
-		}
-		return;
-	}
-
-	--CurrentAmmo;
-	OnRep_CurrentAmmo();
 
 	const float Range = WeaponData ? WeaponData->MaxRange : 10000.f;
 	const FVector End = Origin + Direction * Range;

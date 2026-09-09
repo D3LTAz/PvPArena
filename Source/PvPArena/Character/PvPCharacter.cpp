@@ -207,7 +207,24 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
-	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleLegacyFireKeyDiagnostic);
+	PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
+	PlayerInputComponent->BindKey(EKeys::F, IE_Released, this, &APvPCharacter::HandleFireReleased);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Released, this, &APvPCharacter::HandleFireReleased);
+}
+
+void APvPCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	const bool bMatchHasCursorHidden = PC && !PC->bShowMouseCursor;
+	const bool bKeyFire = PC && (PC->IsInputKeyDown(EKeys::LeftMouseButton) || PC->IsInputKeyDown(EKeys::F));
+
+	if (WeaponComponent && (bFireHeld || (bMatchHasCursorHidden && bKeyFire)))
+	{
+		WeaponComponent->Fire();
+	}
 }
 
 void APvPCharacter::Move(const FInputActionValue& Value)
@@ -239,9 +256,19 @@ void APvPCharacter::HandleFireInput(const FInputActionValue& Value)
 	}
 }
 
-void APvPCharacter::HandleLegacyFireKeyDiagnostic()
+void APvPCharacter::HandleFirePressed()
 {
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' Legacy LeftMouseButton IE_Pressed received (raw input path, bypasses Enhanced Input)."), *GetNameSafe(this));
+	bFireHeld = true;
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' LMB pressed -- firing via BindKey (not Enhanced Input)."), *GetNameSafe(this));
+	if (WeaponComponent)
+	{
+		WeaponComponent->Fire();
+	}
+}
+
+void APvPCharacter::HandleFireReleased()
+{
+	bFireHeld = false;
 }
 
 void APvPCharacter::HandleFireInputDiagnosticStarted(const FInputActionValue& Value)

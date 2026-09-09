@@ -101,8 +101,17 @@ protected:
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
+	virtual void PlayerTick(float DeltaTime) override;
+
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
+
+	/** True after tutorial dismiss / rematch until the result screen. LMB fire is polled only while this is set. */
+	bool bGameplayInputEnabled = false;
+
+	void TryFireFromMouse();
+	void HandleKeyboardFire();
+	void FireOwnedWeapon();
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
