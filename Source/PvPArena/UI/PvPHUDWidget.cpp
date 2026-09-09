@@ -17,6 +17,14 @@ void UPvPHUDWidget::InitFor(APvPCharacter* InOwnerCharacter)
 	OwnerCharacter = InOwnerCharacter;
 }
 
+void UPvPHUDWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetIsFocusable(false);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
 FText UPvPHUDWidget::GetHealthText() const
 {
 	if (const APvPCharacter* Character = OwnerCharacter.Get())

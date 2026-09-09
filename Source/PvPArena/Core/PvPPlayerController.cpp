@@ -21,6 +21,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "AudioDevice.h"
 #include "PvPArena.h"
+#include "PvPWeaponComponent.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 APvPPlayerController::APvPPlayerController()
@@ -155,11 +157,46 @@ void APvPPlayerController::ShowUIOnlyWidget(UUserWidget* Widget)
 
 	Widget->AddToViewport(100);
 
+	bGameplayInputEnabled = false;
 	bShowMouseCursor = true;
 	FInputModeUIOnly InputMode;
 	InputMode.SetWidgetToFocus(Widget->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
+}
+
+void APvPPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+	TryFireFromMouse();
+}
+
+void APvPPlayerController::TryFireFromMouse()
+{
+	if (!bGameplayInputEnabled)
+	{
+		return;
+	}
+
+	bool bLeftMouseDown = IsInputKeyDown(EKeys::LeftMouseButton);
+	if (!bLeftMouseDown && FSlateApplication::IsInitialized())
+	{
+		bLeftMouseDown = FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::LeftMouseButton);
+	}
+
+	if (!bLeftMouseDown)
+	{
+		return;
+	}
+
+	APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn());
+	UPvPWeaponComponent* Weapon = PvPChar ? PvPChar->GetWeaponComponent() : nullptr;
+	if (!Weapon)
+	{
+		return;
+	}
+
+	Weapon->Fire();
 }
 
 void APvPPlayerController::HandleTutorialMenuRequested()
@@ -305,6 +342,7 @@ void APvPPlayerController::HandleDismissTutorial()
 
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+	bGameplayInputEnabled = true;
 
 	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
 	{
@@ -359,6 +397,7 @@ void APvPPlayerController::HandlePlayAgain()
 
 	bShowMouseCursor = false;
 	SetInputMode(FInputModeGameOnly());
+	bGameplayInputEnabled = true;
 
 	if (APvPCharacter* PvPChar = Cast<APvPCharacter>(GetPawn()))
 	{

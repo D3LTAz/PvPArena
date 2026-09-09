@@ -24,6 +24,7 @@ public:
 	void InitFor(APvPCharacter* InOwnerCharacter);
 
 protected:
+	virtual void NativeConstruct() override;
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 private:

@@ -87,7 +87,17 @@ void UPvPWeaponComponent::Fire()
 		Direction = FMath::VRandCone(Direction, FMath::DegreesToRadians(WeaponData->SpreadDegrees));
 	}
 
-	ServerFire(EyeLocation, Direction);
+	// Listen-server / AI: call the trace directly. A Server RPC on a
+	// replicated component can be dropped when there is no remote
+	// connection, which left CurrentAmmo stuck at max even after Fire().
+	if (Owner->HasAuthority())
+	{
+		PerformServerTrace(EyeLocation, Direction);
+	}
+	else
+	{
+		ServerFire(EyeLocation, Direction);
+	}
 }
 
 void UPvPWeaponComponent::ServerFire_Implementation(FVector_NetQuantize Origin, FVector_NetQuantizeNormal Direction)
