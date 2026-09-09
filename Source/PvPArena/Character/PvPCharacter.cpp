@@ -207,9 +207,8 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
-
-	// Mouse buttons never reach Enhanced Input in this project (see e356bbc /
-	// 8c71083). Fire on the same BindKey path that already receives LMB.
+	PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
+	PlayerInputComponent->BindKey(EKeys::F, IE_Released, this, &APvPCharacter::HandleFireReleased);
 	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
 	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Released, this, &APvPCharacter::HandleFireReleased);
 }
@@ -218,7 +217,11 @@ void APvPCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (bFireHeld && WeaponComponent)
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	const bool bMatchHasCursorHidden = PC && !PC->bShowMouseCursor;
+	const bool bKeyFire = PC && (PC->IsInputKeyDown(EKeys::LeftMouseButton) || PC->IsInputKeyDown(EKeys::F));
+
+	if (WeaponComponent && (bFireHeld || (bMatchHasCursorHidden && bKeyFire)))
 	{
 		WeaponComponent->Fire();
 	}

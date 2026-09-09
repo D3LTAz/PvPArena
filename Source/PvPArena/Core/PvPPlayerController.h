@@ -110,6 +110,8 @@ protected:
 	bool bGameplayInputEnabled = false;
 
 	void TryFireFromMouse();
+	void HandleKeyboardFire();
+	void FireOwnedWeapon();
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
