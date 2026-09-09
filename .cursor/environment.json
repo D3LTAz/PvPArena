@@ -1,0 +1,5 @@
+{
+  "name": "PvPArena (Unreal Engine 5.8)",
+  "user": "ubuntu",
+  "install": "bash ./.cursor/cloud-setup.sh"
+}
