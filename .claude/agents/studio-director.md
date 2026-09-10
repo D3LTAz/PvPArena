@@ -31,7 +31,9 @@ Build side
 
 Business side
 - `social-media-manager` — content calendar, posts, Discord/X/TikTok/YouTube, devlogs.
-- `community-manager` — playtesters, Discord moderation, feedback intake.
+- `community-manager` — playtester recruitment policy, Discord moderation rules, feedback-intake policy.
+- `discord-agent` — technical build-out of the Discord server community-manager designs: channels, roles, permissions, bots.
+- `web-developer` — website, demo distribution pipeline (itch.io/butler, Steam later), press kit page.
 - `sales-monetization` — token economy, pricing, storefront and platform listings, partnerships.
 - `contracts-manager` — contractor agreements, NDAs, ToS/EULA/privacy, IP and asset licensing.
 - `finance-ops` — budget, spend tracking, invoices.

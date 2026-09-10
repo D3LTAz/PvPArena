@@ -103,7 +103,15 @@ APvPCharacter::APvPCharacter()
 
 	// Mesh/anim placeholder -- resolved directly here rather than via a
 	// Blueprint subclass (see the class comment for why).
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"));
+	//
+	// Quantum Modular Character Free Sample (Fab, free -- see
+	// docs/free-community-assets-milestone2.md) replaces the Manny
+	// placeholder as of 2026-09-10. Its bind-pose bounds are within ~0.1
+	// units of Manny's (verified headlessly: both mesh-local bottoms sit
+	// essentially at Z=0, both ~180cm tall, ~55cm capsule radius), so
+	// Manny's tuned relative transform below carries over directly rather
+	// than needing to be re-derived from scratch.
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshFinder(TEXT("/Game/QuantumCharacter/Mesh/SKM_QuantumCharacter"));
 	if (MeshFinder.Succeeded())
 	{
 		GetMesh()->SetSkeletalMesh(MeshFinder.Object);
@@ -111,11 +119,17 @@ APvPCharacter::APvPCharacter()
 		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	}
 
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimFinder(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed"));
-	if (AnimFinder.Succeeded())
-	{
-		GetMesh()->SetAnimInstanceClass(AnimFinder.Class);
-	}
+	// No AnimInstanceClass set here on purpose. SKM_QuantumCharacter uses its
+	// own skeleton (SK_Military_Character_Skeleton), not Manny's -- the
+	// existing ABP_Unarmed won't bind to it. The pack ships matching native
+	// locomotion clips (Demo/Animations: Idle/Walk/Run/Jump/Fall/Land) for
+	// this exact skeleton, but building the actual blend/state-machine
+	// AnimBP needs to happen in-editor (confirmed: the stable Python editor
+	// scripting API has no way to construct/wire Blueprint or AnimGraph
+	// nodes -- BlueprintEditorLibrary and EdGraph/EdGraphNode expose no
+	// node-creation or pin-wiring functions at all). Until that AnimBP
+	// exists and is assigned, this mesh renders in its static reference
+	// pose -- not broken, just not yet animated.
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionFinder(TEXT("/Game/Input/Actions/IA_Jump"));
 	if (JumpActionFinder.Succeeded()) { JumpAction = JumpActionFinder.Object; }
