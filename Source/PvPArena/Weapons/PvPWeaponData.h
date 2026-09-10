@@ -57,6 +57,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
 	TSoftObjectPtr<UNiagaraSystem> MuzzleFlashFX;
 
+	/** Socket name on WeaponMesh (or PlaceholderMesh) to attach MuzzleFlashFX to. Leave None to spawn at the trace origin unattached -- safe default until a real weapon mesh's actual socket name is known. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
+	FName MuzzleSocketName = NAME_None;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Cosmetic")
 	TSoftObjectPtr<USoundBase> FireSound;
 

@@ -3,10 +3,16 @@
 #include "PvPWeaponComponent.h"
 #include "PvPWeaponData.h"
 #include "PvPHealthComponent.h"
+#include "PvPCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
+#include "Components/MeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Sound/SoundBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "PvPArena.h"
 
 UPvPWeaponComponent::UPvPWeaponComponent()
@@ -168,7 +174,11 @@ void UPvPWeaponComponent::PerformServerTrace(const FVector& Origin, const FVecto
 
 void UPvPWeaponComponent::MulticastConfirmedHit_Implementation(FVector_NetQuantize TraceStart, FVector_NetQuantize ImpactPoint, bool bHit)
 {
-	// Placeholder: no muzzle/impact FX authored yet, so draw a debug tracer.
+	// Placeholder: no impact FX authored yet, so draw a debug tracer. Muzzle
+	// flash/sound below are real cosmetic hooks -- no-ops until a
+	// UPvPWeaponData instance actually has MuzzleFlashFX/FireSound assigned
+	// (see docs/claude-code-prompt-asset-integration.md), so this doesn't
+	// wait on any specific asset to be safe to leave in.
 #if ENABLE_DRAW_DEBUG
 	if (UWorld* World = GetWorld())
 	{
@@ -179,6 +189,37 @@ void UPvPWeaponComponent::MulticastConfirmedHit_Implementation(FVector_NetQuanti
 		}
 	}
 #endif
+
+	if (!WeaponData)
+	{
+		return;
+	}
+
+	UMeshComponent* MuzzleMesh = nullptr;
+	if (const APvPCharacter* PvPCharacter = Cast<APvPCharacter>(GetOwner()))
+	{
+		MuzzleMesh = PvPCharacter->GetActiveWeaponMeshComponent();
+	}
+
+	const bool bHaveSocket = MuzzleMesh && WeaponData->MuzzleSocketName != NAME_None && MuzzleMesh->DoesSocketExist(WeaponData->MuzzleSocketName);
+
+	if (UNiagaraSystem* MuzzleFlash = WeaponData->MuzzleFlashFX.LoadSynchronous())
+	{
+		if (bHaveSocket)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAttached(MuzzleFlash, MuzzleMesh, WeaponData->MuzzleSocketName,
+				FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+		}
+		else
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, MuzzleFlash, TraceStart);
+		}
+	}
+
+	if (USoundBase* Sound = WeaponData->FireSound.LoadSynchronous())
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, TraceStart);
+	}
 }
 
 void UPvPWeaponComponent::OnRep_CurrentAmmo()

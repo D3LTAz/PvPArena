@@ -16,6 +16,8 @@ class UPvPHealthComponent;
 class UPvPWeaponComponent;
 class UPvPWeaponData;
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
+class UMeshComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -64,9 +66,13 @@ class APvPCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPvPWeaponComponent> WeaponComponent;
 
-	/** Graybox stand-in for the currently equipped weapon (see UPvPWeaponData::PlaceholderMesh) -- swapped by HandleWeaponEquipped(). */
+	/** Graybox stand-in for the currently equipped weapon (see UPvPWeaponData::PlaceholderMesh) -- swapped by HandleWeaponEquipped(). Shown whenever the equipped weapon has no real WeaponMesh assigned. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+
+	/** Real skeletal weapon mesh (see UPvPWeaponData::WeaponMesh) -- hidden until a weapon with real art is equipped, at which point HandleWeaponEquipped() shows this and hides WeaponMeshComponent instead. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USkeletalMeshComponent> WeaponSkeletalMeshComponent;
 
 protected:
 
@@ -210,4 +216,7 @@ public:
 
 	/** Returns WeaponComponent subobject **/
 	FORCEINLINE UPvPWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
+
+	/** Whichever weapon mesh component is currently visible -- WeaponSkeletalMeshComponent if the equipped weapon has real art, otherwise the WeaponMeshComponent placeholder cube. Used to attach muzzle FX at the correct socket. */
+	UMeshComponent* GetActiveWeaponMeshComponent() const;
 };

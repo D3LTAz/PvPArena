@@ -14,7 +14,9 @@
 #include "PvPWeaponComponent.h"
 #include "PvPWeaponData.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPDeathmatchGameState.h"
@@ -86,6 +88,18 @@ APvPCharacter::APvPCharacter()
 	WeaponMeshComponent->SetRelativeLocation(FVector(40.f, 25.f, 10.f));
 	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMeshComponent->SetCastShadow(false);
+
+	// Real skeletal weapon mesh -- hidden until a UPvPWeaponData with
+	// WeaponMesh set is equipped (see HandleWeaponEquipped). Same attach
+	// point as the placeholder for now; a real weapon asset will likely want
+	// a hand-socket attachment instead once the character's actual skeleton
+	// and animations are known.
+	WeaponSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponSkeletalMeshComponent"));
+	WeaponSkeletalMeshComponent->SetupAttachment(GetCapsuleComponent());
+	WeaponSkeletalMeshComponent->SetRelativeLocation(FVector(40.f, 25.f, 10.f));
+	WeaponSkeletalMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponSkeletalMeshComponent->SetCastShadow(false);
+	WeaponSkeletalMeshComponent->SetVisibility(false);
 
 	// Mesh/anim placeholder -- resolved directly here rather than via a
 	// Blueprint subclass (see the class comment for why).
@@ -298,14 +312,46 @@ void APvPCharacter::HandleWeaponEquipped(UPvPWeaponData* NewWeaponData)
 	if (!NewWeaponData)
 	{
 		WeaponMeshComponent->SetStaticMesh(nullptr);
+		WeaponMeshComponent->SetVisibility(false);
+		if (WeaponSkeletalMeshComponent)
+		{
+			WeaponSkeletalMeshComponent->SetSkeletalMesh(nullptr);
+			WeaponSkeletalMeshComponent->SetVisibility(false);
+		}
 		return;
 	}
 
-	if (UStaticMesh* PlaceholderMesh = NewWeaponData->PlaceholderMesh.LoadSynchronous())
+	// Prefer the weapon's real skeletal mesh once art exists for it -- falls
+	// back to the placeholder cube until then, so assigning WeaponMesh on a
+	// UPvPWeaponData instance is the only step needed to swap in real art.
+	if (USkeletalMesh* RealMesh = WeaponSkeletalMeshComponent ? NewWeaponData->WeaponMesh.LoadSynchronous() : nullptr)
 	{
-		WeaponMeshComponent->SetStaticMesh(PlaceholderMesh);
-		WeaponMeshComponent->SetRelativeScale3D(NewWeaponData->PlaceholderScale);
+		WeaponSkeletalMeshComponent->SetSkeletalMesh(RealMesh);
+		WeaponSkeletalMeshComponent->SetVisibility(true);
+		WeaponMeshComponent->SetVisibility(false);
 	}
+	else
+	{
+		if (UStaticMesh* PlaceholderMesh = NewWeaponData->PlaceholderMesh.LoadSynchronous())
+		{
+			WeaponMeshComponent->SetStaticMesh(PlaceholderMesh);
+			WeaponMeshComponent->SetRelativeScale3D(NewWeaponData->PlaceholderScale);
+		}
+		WeaponMeshComponent->SetVisibility(true);
+		if (WeaponSkeletalMeshComponent)
+		{
+			WeaponSkeletalMeshComponent->SetVisibility(false);
+		}
+	}
+}
+
+UMeshComponent* APvPCharacter::GetActiveWeaponMeshComponent() const
+{
+	if (WeaponSkeletalMeshComponent && WeaponSkeletalMeshComponent->IsVisible())
+	{
+		return WeaponSkeletalMeshComponent;
+	}
+	return WeaponMeshComponent;
 }
 
 void APvPCharacter::ToggleCameraView()
