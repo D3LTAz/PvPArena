@@ -11,11 +11,10 @@ class UPvPAIDifficultyProfile;
 
 /**
  * Single-player practice mode: one human player vs. one AI-controlled bot.
- * Concrete (not abstract) and sets its own DefaultPawnClass/
- * PlayerControllerClass in the constructor via ConstructorHelpers, pointing
- * at the existing BP_ThirdPersonCharacter/BP_ThirdPersonPlayerController --
- * so it's usable directly as GlobalDefaultGameMode with no new Blueprint
- * authoring required.
+ * Concrete (not abstract). The constructor assigns DefaultPawnClass and
+ * PlayerControllerClass to the C++ types APvPCharacter and
+ * APvPPlayerController (same classes the human player uses). BotPawnClass
+ * is also APvPCharacter. No Blueprint pawn/controller subclass.
  *
  * The bot does NOT spawn automatically on a timer -- BeginPlay only sets
  * WaitingToStart. The match (and the bot) only actually starts once
