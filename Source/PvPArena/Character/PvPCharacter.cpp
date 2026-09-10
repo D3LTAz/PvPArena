@@ -184,16 +184,6 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		{
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &APvPCharacter::HandleFireInput);
 			UE_LOG(LogPvPArena, Log, TEXT("'%s' bound FireAction to HandleFireInput."), *GetNameSafe(this));
-
-			// DIAGNOSTIC ONLY -- logs every trigger state Enhanced Input ever
-			// reports for FireAction, not just Triggered, to find out whether
-			// EI evaluates this action's mapping AT ALL when LeftMouseButton
-			// is clicked (legacy BindKey already proved the click itself
-			// reaches the PlayerController). Remove once resolved.
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APvPCharacter::HandleFireInputDiagnosticStarted);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Ongoing, this, &APvPCharacter::HandleFireInputDiagnosticOngoing);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &APvPCharacter::HandleFireInputDiagnosticCompleted);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Canceled, this, &APvPCharacter::HandleFireInputDiagnosticCanceled);
 		}
 		else
 		{
@@ -288,26 +278,6 @@ void APvPCharacter::HandleFirePressed()
 void APvPCharacter::HandleFireReleased()
 {
 	bFireHeld = false;
-}
-
-void APvPCharacter::HandleFireInputDiagnosticStarted(const FInputActionValue& Value)
-{
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' FireAction Started (value=%s)."), *GetNameSafe(this), *Value.ToString());
-}
-
-void APvPCharacter::HandleFireInputDiagnosticOngoing(const FInputActionValue& Value)
-{
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' FireAction Ongoing (value=%s)."), *GetNameSafe(this), *Value.ToString());
-}
-
-void APvPCharacter::HandleFireInputDiagnosticCompleted(const FInputActionValue& Value)
-{
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' FireAction Completed (value=%s)."), *GetNameSafe(this), *Value.ToString());
-}
-
-void APvPCharacter::HandleFireInputDiagnosticCanceled(const FInputActionValue& Value)
-{
-	UE_LOG(LogPvPArena, Log, TEXT("'%s' FireAction Canceled (value=%s)."), *GetNameSafe(this), *Value.ToString());
 }
 
 void APvPCharacter::HandleCycleWeaponInput()

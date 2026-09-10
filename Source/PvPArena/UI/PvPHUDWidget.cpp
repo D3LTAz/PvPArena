@@ -59,7 +59,7 @@ FText UPvPHUDWidget::GetAmmoText() const
 		if (const UPvPWeaponComponent* Weapon = Character->GetWeaponComponent())
 		{
 			const int32 MaxAmmo = Weapon->WeaponData ? Weapon->WeaponData->MaxAmmo : 0;
-			return FText::FromString(FString::Printf(TEXT("Ammo: %d / %d   [BUILD4 F=fire]"), Weapon->CurrentAmmo, MaxAmmo));
+			return FText::FromString(FString::Printf(TEXT("Ammo: %d / %d"), Weapon->CurrentAmmo, MaxAmmo));
 		}
 	}
 	return FText::FromString(TEXT("Ammo: --"));

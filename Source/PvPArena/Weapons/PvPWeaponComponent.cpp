@@ -84,12 +84,6 @@ void UPvPWeaponComponent::Fire()
 	UE_LOG(LogPvPArena, Log, TEXT("'%s' fired (weapon=%s ammo=%d)."),
 		*GetNameSafe(Owner), WeaponData ? *WeaponData->GetName() : TEXT("none"), CurrentAmmo);
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.2f, FColor::Green,
-			FString::Printf(TEXT("FIRE ammo=%d"), CurrentAmmo));
-	}
-
 	FVector EyeLocation;
 	FRotator EyeRotation;
 	Owner->GetActorEyesViewPoint(EyeLocation, EyeRotation);

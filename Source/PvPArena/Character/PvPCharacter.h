@@ -135,12 +135,6 @@ protected:
 	/** Called for fire input */
 	void HandleFireInput(const FInputActionValue& Value);
 
-	/** DIAGNOSTIC ONLY -- logs FireAction's Started/Ongoing/Completed/Canceled trigger events, to see which (if any) Enhanced Input actually reports on a Left Click. Remove once the fire-input bug is resolved. */
-	void HandleFireInputDiagnosticStarted(const FInputActionValue& Value);
-	void HandleFireInputDiagnosticOngoing(const FInputActionValue& Value);
-	void HandleFireInputDiagnosticCompleted(const FInputActionValue& Value);
-	void HandleFireInputDiagnosticCanceled(const FInputActionValue& Value);
-
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
 
