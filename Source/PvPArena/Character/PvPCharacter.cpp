@@ -119,17 +119,14 @@ APvPCharacter::APvPCharacter()
 		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	}
 
-	// No AnimInstanceClass set here on purpose. SKM_QuantumCharacter uses its
-	// own skeleton (SK_Military_Character_Skeleton), not Manny's -- the
-	// existing ABP_Unarmed won't bind to it. The pack ships matching native
-	// locomotion clips (Demo/Animations: Idle/Walk/Run/Jump/Fall/Land) for
-	// this exact skeleton, but building the actual blend/state-machine
-	// AnimBP needs to happen in-editor (confirmed: the stable Python editor
-	// scripting API has no way to construct/wire Blueprint or AnimGraph
-	// nodes -- BlueprintEditorLibrary and EdGraph/EdGraphNode expose no
-	// node-creation or pin-wiring functions at all). Until that AnimBP
-	// exists and is assigned, this mesh renders in its static reference
-	// pose -- not broken, just not yet animated.
+	// ABP_QuantumCharacter -- built in-editor (blend space + 2-state
+	// Grounded/InAir machine over the pack's native Idle/Walk/Run/Fall
+	// clips), targeting SK_Military_Character_Skeleton, not Manny's.
+	static ConstructorHelpers::FClassFinder<UAnimInstance> QuantumAnimFinder(TEXT("/Game/QuantumCharacter/ABP_QuantumCharacter"));
+	if (QuantumAnimFinder.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(QuantumAnimFinder.Class);
+	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionFinder(TEXT("/Game/Input/Actions/IA_Jump"));
 	if (JumpActionFinder.Succeeded()) { JumpAction = JumpActionFinder.Object; }
