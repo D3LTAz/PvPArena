@@ -178,23 +178,18 @@ void APvPPlayerController::PlayerTick(float DeltaTime)
 
 void APvPPlayerController::TryFireFromMouse()
 {
-	if (bShowMouseCursor)
-	{
-		return;
-	}
-
 	if (!bGameplayInputEnabled)
 	{
 		return;
 	}
 
-	bool bLeftMouseDown = IsInputKeyDown(EKeys::LeftMouseButton);
+	bool bLeftMouseDown = IsInputKeyDown(EKeys::LeftMouseButton) || IsInputKeyDown(EKeys::F);
 	if (!bLeftMouseDown && FSlateApplication::IsInitialized())
 	{
 		bLeftMouseDown = FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::LeftMouseButton);
 	}
 
-	if (!bLeftMouseDown && !IsInputKeyDown(EKeys::F))
+	if (!bLeftMouseDown)
 	{
 		return;
 	}
@@ -204,11 +199,6 @@ void APvPPlayerController::TryFireFromMouse()
 
 void APvPPlayerController::HandleKeyboardFire()
 {
-	if (bShowMouseCursor)
-	{
-		return;
-	}
-
 	FireOwnedWeapon();
 }
 
