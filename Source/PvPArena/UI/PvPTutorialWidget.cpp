@@ -105,7 +105,7 @@ TSharedRef<SWidget> UPvPTutorialWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Left Click -- Fire")))
+					.Text(FText::FromString(TEXT("FIRE BUILD 4 — press F to shoot (LMB too)")))
 					.Font(BodyFont)
 					.ColorAndOpacity(FLinearColor::White)
 				]

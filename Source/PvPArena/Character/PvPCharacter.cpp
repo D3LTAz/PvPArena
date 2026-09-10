@@ -18,6 +18,8 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "PvPDeathmatchGameState.h"
+#include "PvPMatchState.h"
+#include "Framework/Application/SlateApplication.h"
 #include "EngineUtils.h"
 #include "Animation/AnimInstance.h"
 #include "InputMappingContext.h"
@@ -217,11 +219,28 @@ void APvPCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	const bool bMatchHasCursorHidden = PC && !PC->bShowMouseCursor;
-	const bool bKeyFire = PC && (PC->IsInputKeyDown(EKeys::LeftMouseButton) || PC->IsInputKeyDown(EKeys::F));
+	if (!IsPlayerControlled() || !WeaponComponent)
+	{
+		return;
+	}
 
-	if (WeaponComponent && (bFireHeld || (bMatchHasCursorHidden && bKeyFire)))
+	const APvPDeathmatchGameState* GS = GetWorld() ? GetWorld()->GetGameState<APvPDeathmatchGameState>() : nullptr;
+	if (!GS || GS->CurrentMatchState != EPvPMatchState::InProgress)
+	{
+		return;
+	}
+
+	bool bWantFire = bFireHeld;
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		bWantFire = bWantFire || PC->IsInputKeyDown(EKeys::LeftMouseButton) || PC->IsInputKeyDown(EKeys::F);
+	}
+	if (FSlateApplication::IsInitialized() && FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::LeftMouseButton))
+	{
+		bWantFire = true;
+	}
+
+	if (bWantFire)
 	{
 		WeaponComponent->Fire();
 	}
