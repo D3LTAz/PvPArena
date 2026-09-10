@@ -51,6 +51,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void CycleWeapon();
 
+	/** Refills CurrentAmmo to WeaponData's MaxAmmo for the currently equipped weapon. Server-authoritative like Fire() -- calls the trace-side logic directly when the owner HasAuthority() (listen-server/AI), otherwise routes through ServerReload. No reload time/animation gate yet -- instant, same "functional not polished" bar as the rest of the weapon system. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void Reload();
+
 	/** Fires whenever EquipWeapon() changes WeaponData (including the initial equip in BeginPlay) -- the owning character listens to this to swap its held-weapon mesh. */
 	UPROPERTY(BlueprintAssignable, Category = "Weapon")
 	FPvPOnWeaponEquippedSignature OnWeaponEquipped;
@@ -64,6 +68,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerFire(FVector_NetQuantize Origin, FVector_NetQuantizeNormal Direction);
+
+	UFUNCTION(Server, Reliable)
+	void ServerReload();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastConfirmedHit(FVector_NetQuantize TraceStart, FVector_NetQuantize ImpactPoint, bool bHit);

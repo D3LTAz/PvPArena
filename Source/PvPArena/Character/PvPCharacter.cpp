@@ -79,24 +79,24 @@ APvPCharacter::APvPCharacter()
 	// Server-authoritative hitscan fire
 	WeaponComponent = CreateDefaultSubobject<UPvPWeaponComponent>(TEXT("WeaponComponent"));
 
-	// Graybox stand-in for the held weapon -- attached to the capsule (not a
-	// hand bone) since there's no weapon-holding animation pose yet, so a
-	// bone attachment wouldn't look "held" anyway. Swapped per-weapon by
-	// HandleWeaponEquipped(). See UPvPWeaponData::PlaceholderMesh.
+	// Graybox stand-in for the held weapon -- attached to the character
+	// mesh's own "Weapon" socket (confirmed present on
+	// SK_Military_Character_Skeleton via headless inspection: a socket
+	// explicitly named "Weapon" already exists, alongside a hand_r bone and
+	// an ik_hand_gun bone, all consistent with this being the asset's
+	// intended weapon-hold point) so the gun actually moves/orients with the
+	// hand instead of floating at a fixed offset from the capsule. Swapped
+	// per-weapon by HandleWeaponEquipped(). See UPvPWeaponData::PlaceholderMesh.
 	WeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMeshComponent"));
-	WeaponMeshComponent->SetupAttachment(GetCapsuleComponent());
-	WeaponMeshComponent->SetRelativeLocation(FVector(40.f, 25.f, 10.f));
+	WeaponMeshComponent->SetupAttachment(GetMesh(), TEXT("Weapon"));
 	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMeshComponent->SetCastShadow(false);
 
 	// Real skeletal weapon mesh -- hidden until a UPvPWeaponData with
-	// WeaponMesh set is equipped (see HandleWeaponEquipped). Same attach
-	// point as the placeholder for now; a real weapon asset will likely want
-	// a hand-socket attachment instead once the character's actual skeleton
-	// and animations are known.
+	// WeaponMesh set is equipped (see HandleWeaponEquipped). Same "Weapon"
+	// socket attachment as the placeholder above.
 	WeaponSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponSkeletalMeshComponent"));
-	WeaponSkeletalMeshComponent->SetupAttachment(GetCapsuleComponent());
-	WeaponSkeletalMeshComponent->SetRelativeLocation(FVector(40.f, 25.f, 10.f));
+	WeaponSkeletalMeshComponent->SetupAttachment(GetMesh(), TEXT("Weapon"));
 	WeaponSkeletalMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponSkeletalMeshComponent->SetCastShadow(false);
 	WeaponSkeletalMeshComponent->SetVisibility(false);
@@ -150,8 +150,11 @@ APvPCharacter::APvPCharacter()
 	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> RifleFinder(TEXT("/Game/Weapons/DA_Weapon_Rifle"));
 	if (RifleFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(RifleFinder.Object); }
 
-	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> SniperFinder(TEXT("/Game/Weapons/DA_Weapon_Sniper"));
-	if (SniperFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(SniperFinder.Object); }
+	// Was DA_Weapon_Sniper -- no free sniper-shaped asset sourced yet, so this
+	// slot became an SMG instead (real rigged mesh: Low Poly SMG 45, Fab
+	// free) rather than sitting on an unused placeholder.
+	static ConstructorHelpers::FObjectFinder<UPvPWeaponData> SMGFinder(TEXT("/Game/Weapons/DA_Weapon_SMG"));
+	if (SMGFinder.Succeeded()) { WeaponComponent->AvailableWeapons.Add(SMGFinder.Object); }
 }
 
 void APvPCharacter::BeginPlay()
@@ -223,6 +226,7 @@ void APvPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// Weapon cycling and camera toggle: bound via the legacy raw-key path
 	// rather than Input Action assets -- no IMC key-mapping required.
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &APvPCharacter::HandleCycleWeaponInput);
+	PlayerInputComponent->BindKey(EKeys::R, IE_Pressed, this, &APvPCharacter::HandleReloadInput);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &APvPCharacter::ToggleCameraView);
 	PlayerInputComponent->BindKey(EKeys::F, IE_Pressed, this, &APvPCharacter::HandleFirePressed);
 	PlayerInputComponent->BindKey(EKeys::F, IE_Released, this, &APvPCharacter::HandleFireReleased);
@@ -310,6 +314,14 @@ void APvPCharacter::HandleCycleWeaponInput()
 	if (WeaponComponent)
 	{
 		WeaponComponent->CycleWeapon();
+	}
+}
+
+void APvPCharacter::HandleReloadInput()
+{
+	if (WeaponComponent)
+	{
+		WeaponComponent->Reload();
 	}
 }
 

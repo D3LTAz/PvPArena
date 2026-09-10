@@ -144,6 +144,9 @@ protected:
 	/** Bound directly to the Q key via the legacy raw-key input path (no Input Action asset needed) -- cycles the 2-3 weapon loadout. */
 	void HandleCycleWeaponInput();
 
+	/** Bound directly to the R key -- refills the current weapon's ammo. */
+	void HandleReloadInput();
+
 	/** Left mouse: same raw BindKey path as Q/V. Enhanced Input has never
 	 *  delivered mouse buttons to IA_Fire in this project (legacy diagnostic
 	 *  logged every click; HandleFireInput never ran). This is the real fire

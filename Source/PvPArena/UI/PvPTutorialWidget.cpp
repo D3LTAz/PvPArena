@@ -113,7 +113,15 @@ TSharedRef<SWidget> UPvPTutorialWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Q -- Switch Weapon (Pistol / Rifle / Sniper)")))
+					.Text(FText::FromString(TEXT("Q -- Switch Weapon (Pistol / Rifle / SMG)")))
+					.Font(BodyFont)
+					.ColorAndOpacity(FLinearColor::White)
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 4)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("R -- Reload")))
 					.Font(BodyFont)
 					.ColorAndOpacity(FLinearColor::White)
 				]

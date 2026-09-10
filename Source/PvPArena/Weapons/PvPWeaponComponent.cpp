@@ -49,6 +49,43 @@ void UPvPWeaponComponent::CycleWeapon()
 	EquipWeapon(AvailableWeapons[NextIndex]);
 }
 
+void UPvPWeaponComponent::Reload()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner || !WeaponData)
+	{
+		return;
+	}
+
+	// Same listen-server RPC caveat as Fire() -- call the authoritative path
+	// directly when we already have authority instead of routing through a
+	// Server RPC that can be a no-op with no remote connection.
+	if (Owner->HasAuthority())
+	{
+		CurrentAmmo = WeaponData->MaxAmmo;
+		OnRep_CurrentAmmo();
+		UE_LOG(LogPvPArena, Log, TEXT("'%s' reloaded (weapon=%s ammo=%d)."),
+			*GetNameSafe(Owner), *WeaponData->GetName(), CurrentAmmo);
+	}
+	else
+	{
+		ServerReload();
+	}
+}
+
+void UPvPWeaponComponent::ServerReload_Implementation()
+{
+	if (!WeaponData)
+	{
+		return;
+	}
+
+	CurrentAmmo = WeaponData->MaxAmmo;
+	OnRep_CurrentAmmo();
+	UE_LOG(LogPvPArena, Log, TEXT("'%s' reloaded (weapon=%s ammo=%d)."),
+		*GetNameSafe(GetOwner()), *WeaponData->GetName(), CurrentAmmo);
+}
+
 void UPvPWeaponComponent::Fire()
 {
 	AActor* Owner = GetOwner();
